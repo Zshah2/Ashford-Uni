@@ -1,0 +1,14 @@
+03_minors.txt — MINORS (6 rows in sample)
+=========================================
+Check: minor_id unique; dept_id exists in 01_departments.txt
+
+minor_id | minor_name              | dept_id
+N-CS     | Minor in Computer Sci.  | COM
+N-ECO    | Minor in Economics      | ECO
+N-BIO    | Minor in Biology        | BIO
+N-ENGL   | Minor in English        | ENGL
+N-HIS    | Minor in History        | HIS
+N-PHY    | Minor in Physics        | PHY
+
+COUNT: 6 minors in sample
+Students may have 0 or 1 minor (see 08_student_major_minor.txt)

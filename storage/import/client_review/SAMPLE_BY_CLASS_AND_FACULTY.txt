@@ -1,0 +1,82 @@
+SAMPLE BY CLASS YEAR + FACULTY (manual review)
+==============================================
+Folder: storage/import/client_review/
+IDs: 7-digit random (per lecture). Not sequential on purpose.
+Status: DRAFT text only — not in MySQL yet.
+
+
+══════════════════════════════════════════════
+FACULTY (6 examples)
+══════════════════════════════════════════════
+id       | first_name | last_name | rank           | load      | dept | office   | email
+---------+------------+-----------+----------------+-----------+------+----------+----------------------
+9123847  | Elena      | Vargas    | Professor      | Fulltime  | COM  | AB-2101  | evargas@ashford.edu
+9471023  | Marcus     | Chen      | Associate Prof | Fulltime  | PHY  | AB-2104  | mchen@ashford.edu
+9038561  | Priya      | Nair      | Assistant Prof | Fulltime  | ECO  | AB-2020  | pnair@ashford.edu
+9682140  | Daniel     | Ortiz     | Professor      | Fulltime  | BIO  | AB-2028  | dortiz@ashford.edu
+9256704  | Hannah     | Brooks    | Lecturer       | Parttime  | ENGL | Lib-1102 | hbrooks@ashford.edu
+9814036  | James      | Okonkwo   | Associate Prof | Fulltime  | HIS  | Lib-1109 | jokonkwo@ashford.edu
+
+
+══════════════════════════════════════════════
+UNDERGRAD — one sample row per class year × load
+(covers all 8 buckets from the slide pattern)
+══════════════════════════════════════════════
+
+--- FRESHMAN (target later: 3,000 = 2,000 FT + 1,000 PT) ---
+id       | first_name | last_name | year     | load      | major   | minor   | email
+---------+------------+-----------+----------+-----------+---------+---------+----------------------
+1048293  | Aisha      | Rahman    | Freshman | Fulltime  | M-CS    | N-ECO   | arahman@ashford.edu
+1572048  | Ben        | Alvarez   | Freshman | Parttime  | M-BIO   | —       | balvarez@ashford.edu
+
+--- SOPHOMORE (target later: 3,000 = 2,000 FT + 1,000 PT) ---
+id       | first_name | last_name | year      | load      | major   | minor   | email
+---------+------------+-----------+-----------+-----------+---------+---------+----------------------
+1185630  | Chloe      | Nguyen    | Sophomore | Fulltime  | M-CS    | N-HIS   | cnguyen@ashford.edu
+1629174  | Derek      | Patel     | Sophomore | Parttime  | M-ECO   | —       | dpatel@ashford.edu
+
+--- JUNIOR (target later: 3,000 = 2,000 FT + 1,000 PT) ---
+id       | first_name | last_name | year   | load      | major   | minor   | email
+---------+------------+-----------+--------+-----------+---------+---------+----------------------
+1390482  | Emily      | Santos    | Junior | Fulltime  | M-ENGL  | N-HIS   | esantos@ashford.edu
+1763519  | Farid      | Hassan    | Junior | Parttime  | M-PHY   | —       | fhassan@ashford.edu
+
+--- SENIOR (target later: 3,000 = 2,000 FT + 1,000 PT) ---
+id       | first_name | last_name | year   | load      | major   | minor   | email
+---------+------------+-----------+--------+-----------+---------+---------+----------------------
+1457826  | Grace      | Kim       | Senior | Fulltime  | M-MIS   | N-BIO   | gkim@ashford.edu
+1836095  | Hector     | Morales   | Senior | Parttime  | M-HIS   | N-ENGL  | hmorales@ashford.edu
+
+
+══════════════════════════════════════════════
+GRADUATE — Masters + PhD examples
+══════════════════════════════════════════════
+id       | first_name | last_name | program | load      | dept | email
+---------+------------+-----------+---------+-----------+------+----------------------
+1284730  | Nora       | Singh     | Masters | Fulltime  | COM  | nsingh@ashford.edu
+1915624  | Omar       | Diaz      | PhD     | Parttime  | COM  | odiaz@ashford.edu
+
+
+══════════════════════════════════════════════
+QUICK COUNT IN THIS SAMPLE
+══════════════════════════════════════════════
+Faculty:              6
+Freshman FT + PT:     2
+Sophomore FT + PT:    2
+Junior FT + PT:       2
+Senior FT + PT:       2
+Grad MS + PhD:        2
+-------------------------
+People total:        16
+
+
+══════════════════════════════════════════════
+LATER FULL TARGET (for reference)
+══════════════════════════════════════════════
+Freshman   3,000 (2,000 FT / 1,000 PT)
+Sophomore  3,000 (2,000 FT / 1,000 PT)
+Junior     3,000 (2,000 FT / 1,000 PT)
+Senior     3,000 (2,000 FT / 1,000 PT)
+UG total  12,000
+Grad         300 (50 PhD inside that)
+Faculty      400 (300 FT / 100 PT)

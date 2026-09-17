@@ -1,0 +1,64 @@
+11_VERIFY_CHECKLIST.txt — MANUAL VERIFICATION + SIGN-OFF
+========================================================
+Tick each box while reading the matching file.
+
+
+A) FILE COUNTS
+--------------
+[ ] 01_departments.txt ........ 6 dept rows
+[ ] 02_majors.txt ............. 8 major rows
+[ ] 03_minors.txt ............. 6 minor rows
+[ ] 04_faculty.txt ............ 6 faculty rows
+[ ] 05_faculty_departments.txt  6 link rows
+[ ] 06_students.txt ........... 14 student rows
+[ ] 07_undergrad_detail.txt ... 12 UG rows
+[ ] 08_student_major_minor.txt  12 major + 7 minor rows
+[ ] 09_grad_detail.txt ........ 2 grad rows
+[ ] 10_courses_sample.txt ..... 14 course rows
+
+People total: 6 faculty + 14 students = 20  [ ]
+
+
+B) CROSS-LINKS (pick a few rows and follow IDs)
+----------------------------------------------
+[ ] Every chair_id in 01 exists in 04
+[ ] Every faculty_id in 05 exists in 04
+[ ] Every dept_id in 05 exists in 01
+[ ] Every UG student_id in 07 exists in 06
+[ ] Every grad student_id in 09 exists in 06
+[ ] Every major_id in 08 exists in 02
+[ ] Every minor_id in 08 exists in 03 (when not blank)
+[ ] No UG has two majors
+[ ] No UG has two minors
+[ ] No major dept == minor dept for same student
+[ ] COM offers both M-CS and M-MIS (lecture-style example)
+[ ] Course dept_ids all exist in 01
+[ ] No schedule / section / meeting-time rows slipped in
+
+
+C) SAMPLE COVERAGE
+------------------
+[ ] Freshman / Sophomore / Junior / Senior all present
+[ ] Full-time and Part-time both present
+[ ] Some students with minor, some without
+[ ] Masters + PhD both present
+[ ] Faculty Fulltime + Parttime both present
+
+
+D) CLIENT DECISIONS
+-------------------
+[ ] ID ranges OK (students 100xxx, faculty 900xxx)?
+[ ] Major codes (M-CS, M-MIS, …) OK?
+[ ] Expand later to 12 depts / 12 majors?
+[ ] Full headcount target: 12,000 UG + 300 grad + 400 faculty (300 FT / 100 PT)
+[ ] Approve Phase 1 sample?  Yes / No / Changes: ________
+
+
+E) SIGN-OFF
+-----------
+Reviewer name: ____________________
+Date: ____________________
+Signature / initials: ____________________
+
+Next step if approved:
+  Generate full text datasets (still text-first), then import to MySQL.

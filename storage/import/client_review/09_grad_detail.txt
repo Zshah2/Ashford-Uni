@@ -1,0 +1,16 @@
+09_grad_detail.txt — GRADUATE STUDENTS (2 rows)
+===============================================
+Check: student_id in 06_students.txt (100013–100014)
+program: Masters | PhD
+load: Full-time | Part-time
+home_dept must exist in 01_departments.txt
+
+student_id | program | enrollment_intensity | home_dept | start_year | thesis_year | credits_earned | email
+100013     | Masters | Full-time            | COM       | 2025       | 2027        | 12             | nsingh@ashford.edu
+100014     | PhD     | Part-time            | COM       | 2023       | 2028        | 48             | odiaz@ashford.edu
+
+MANUAL COUNT CHECK
+Grad total: 2
+Masters: 1 (FT)
+PhD: 1 (PT)
+(Full lecture target later: 300 grads with 50 PhD — this is sample only)

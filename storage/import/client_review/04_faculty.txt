@@ -1,0 +1,15 @@
+04_faculty.txt — FACULTY PEOPLE (6 rows)
+=======================================
+Check: faculty_id unique; range 900xxx; email @ashford.edu
+
+faculty_id | first_name | last_name | gender | rank            | faculty_type | office   | email
+900001     | Elena      | Vargas    | F      | Professor       | Fulltime     | AB-2101  | evargas@ashford.edu
+900002     | Marcus     | Chen      | M      | Associate Prof  | Fulltime     | AB-2104  | mchen@ashford.edu
+900003     | Priya      | Nair      | F      | Assistant Prof  | Fulltime     | AB-2020  | pnair@ashford.edu
+900004     | Daniel     | Ortiz     | M      | Professor       | Fulltime     | AB-2028  | dortiz@ashford.edu
+900005     | Hannah     | Brooks    | F      | Lecturer        | Parttime     | Lib-1102 | hbrooks@ashford.edu
+900006     | James      | Okonkwo   | M      | Associate Prof  | Fulltime     | Lib-1109 | jokonkwo@ashford.edu
+
+COUNT: 6 faculty
+Cross-check: each should appear once in 05_faculty_departments.txt
+Cross-check: chairs in 01_departments.txt are subset of these IDs

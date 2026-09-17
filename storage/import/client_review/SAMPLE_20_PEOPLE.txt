@@ -1,0 +1,50 @@
+Ashford College — CLIENT SAMPLE overview (Phase 1)
+==================================================
+Prefer the numbered pack for row-by-row checks:
+
+  storage/import/client_review/00_README.txt
+  … through …
+  storage/import/client_review/11_VERIFY_CHECKLIST.txt
+
+This file is only a one-page people summary.
+
+
+PEOPLE TOTAL = 20
+----------------
+Faculty 900001–900006 (6)
+Students 100001–100014 (14)  → 12 UG + 2 Grad
+
+
+FACULTY
+-------
+900001 Elena Vargas     Professor       Fulltime  COM
+900002 Marcus Chen      Associate Prof  Fulltime  PHY
+900003 Priya Nair       Assistant Prof  Fulltime  ECO
+900004 Daniel Ortiz     Professor       Fulltime  BIO
+900005 Hannah Brooks    Lecturer        Parttime  ENGL
+900006 James Okonkwo    Associate Prof  Fulltime  HIS
+
+
+UNDERGRAD (major / minor)
+-------------------------
+100001 Aisha Rahman     Freshman  FT  major CS     minor ECO
+100002 Ben Alvarez      Freshman  PT  major BIO    minor —
+100003 Chloe Nguyen     Sophomore FT  major CS     minor HIS
+100004 Derek Patel      Sophomore PT  major ECO    minor —
+100005 Emily Santos     Junior    FT  major ENGL   minor HIS
+100006 Farid Hassan     Junior    PT  major PHY    minor —
+100007 Grace Kim        Senior    FT  major MIS    minor BIO
+100008 Hector Morales   Senior    PT  major HIS    minor ENGL
+100009 Ivy Thompson     Freshman  FT  major ECO    minor CS
+100010 Jordan Lee       Sophomore FT  major BIO    minor —
+100011 Kayla Brown      Junior    FT  major ENGL   minor —
+100012 Liam Foster      Senior    FT  major PHY    minor CS
+
+
+GRAD
+----
+100013 Nora Singh       Masters  FT  COM
+100014 Omar Diaz        PhD      PT  COM
+
+
+See 11_VERIFY_CHECKLIST.txt for sign-off.

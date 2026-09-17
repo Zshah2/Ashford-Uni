@@ -1,0 +1,15 @@
+05_faculty_departments.txt — FACULTY ↔ DEPT (6 rows)
+====================================================
+Check: faculty_id in 04_faculty.txt; dept_id in 01_departments.txt
+One row per faculty in this sample (100% in one dept)
+
+faculty_id | dept_id | percent_time | date_of_appointment
+900001     | COM     | 100          | 2018-08-15
+900002     | PHY     | 100          | 2019-01-20
+900003     | ECO     | 100          | 2020-08-25
+900004     | BIO     | 100          | 2017-08-20
+900005     | ENGL    | 100          | 2021-08-30
+900006     | HIS     | 100          | 2016-08-22
+
+COUNT: 6 links
+Verify: every faculty has exactly one dept here

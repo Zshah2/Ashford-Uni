@@ -1,0 +1,28 @@
+07_undergrad_detail.txt — UNDERGRAD YEAR + LOAD (12 rows)
+=========================================================
+Check: student_id in 06_students.txt (100001–100012 only)
+academic_year_level: Freshman | Sophomore | Junior | Senior
+enrollment_intensity: Full-time | Part-time
+
+student_id | academic_year_level | enrollment_intensity | student_type
+100001     | Freshman            | Full-time            | Fulltime
+100002     | Freshman            | Part-time            | Parttime
+100003     | Sophomore           | Full-time            | Fulltime
+100004     | Sophomore           | Part-time            | Parttime
+100005     | Junior              | Full-time            | Fulltime
+100006     | Junior              | Part-time            | Parttime
+100007     | Senior              | Full-time            | Fulltime
+100008     | Senior              | Part-time            | Parttime
+100009     | Freshman            | Full-time            | Fulltime
+100010     | Sophomore           | Full-time            | Fulltime
+100011     | Junior              | Full-time            | Fulltime
+100012     | Senior              | Full-time            | Fulltime
+
+MANUAL COUNT CHECK
+Freshman:  100001,100002,100009           → 3
+Sophomore: 100003,100004,100010           → 3
+Junior:    100005,100006,100011           → 3
+Senior:    100007,100008,100012           → 3
+Full-time: 9
+Part-time: 3
+TOTAL UG: 12
