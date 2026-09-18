@@ -54,11 +54,15 @@ D) CLIENT DECISIONS
 [ ] Approve Phase 1 sample?  Yes / No / Changes: ________
 
 
-E) SIGN-OFF
------------
+E) SIGN-OFF / EDITS
+-------------------
 Reviewer name: ____________________
 Date: ____________________
 Signature / initials: ____________________
+
+Fixes I made (optional — teammates can edit these files too):
+  - 
+  - 
 
 Next step if approved:
   Generate full text datasets (still text-first), then import to MySQL.

@@ -13,6 +13,8 @@ Last updated: 2026-09-17
 1. Capture requirements here (this file).
 2. PHASE 1 — small SAMPLE (~20 people) in text for client review
    (mix of faculty + students, majors/minors). Easy row-by-row check.
+   Teammates should LOOK OVER and FIX the text files as needed
+   (branch update_changes_01 / PRs — not a silent rewrite of everything).
 3. PHASE 2 — after sample approved, generate full headcounts (section 3).
 4. Only after approval: run import scripts into MySQL.
 5. Re-check counts with SQL against this checklist.

@@ -3,12 +3,23 @@ CLIENT REVIEW PACK — Phase 1 sample (manual verify)
 Folder: storage/import/client_review/
 Status: DRAFT — not imported to MySQL
 
+TEAM: look over AND fix
+-----------------------
+This pack is for the whole team — not read-only.
+- Review counts, names, majors/minors, IDs, etc.
+- If something looks wrong, edit the text files on this branch
+  (or open a PR) and note what you changed in 11_VERIFY_CHECKLIST.txt.
+- Prefer small clear fixes over rewriting everything.
+- Do not import to MySQL until the checklist is signed off.
+
+
 HOW TO VERIFY (suggested order)
 -------------------------------
 1. Read this file.
 2. Check each numbered file top-to-bottom (row by row).
 3. Use 11_VERIFY_CHECKLIST.txt to tick counts + cross-links.
 4. Mark approve / changes at the bottom of the checklist.
+   If you fixed files, list your name + what you changed.
 
 ID RULES IN THIS SAMPLE
 -----------------------
