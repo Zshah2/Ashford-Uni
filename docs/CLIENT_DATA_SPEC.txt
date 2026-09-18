@@ -1,60 +1,25 @@
-Ashford College / CollegeWeb — CLIENT DATA SPEC (verify before import)
-======================================================================
-Source: professor lecture slide (2026-09-17)
-Purpose: Hold agreed targets in TEXT first. Review row-by-row with client.
-         Do NOT bulk-import into MySQL until counts and samples are approved.
+Ashford College — Client Data Specs
+===================================
+For professor + team lookover. Edit these text files if something needs fixing.
+Do not import to MySQL until everyone is happy with the numbers/samples.
 
-Status: DRAFT — awaiting client confirmation
-Last updated: 2026-09-17
-
-
-0) PROCESS (how we will work)
------------------------------
-1. Capture requirements here (this file).
-2. PHASE 1 — small SAMPLE (~20 people) in text for client review
-   (mix of faculty + students, majors/minors). Easy row-by-row check.
-   Teammates should LOOK OVER and FIX the text files as needed
-   (branch update_changes_01 / PRs — not a silent rewrite of everything).
-3. PHASE 2 — after sample approved, generate full headcounts (section 3).
-4. Only after approval: run import scripts into MySQL.
-5. Re-check counts with SQL against this checklist.
-
-PHASE 1 sample location:
-  storage/import/client_review/
-  Start at 00_README.txt — then verify 01…10 row-by-row — sign 11_VERIFY_CHECKLIST.txt
-
-Target mix:
-  6 faculty + 14 students (12 UG + 2 grad) = 20 people
-  Plus separate files for depts, majors, minors, declarations, courses
+Branch: update_changes_01
+Sample data folder: storage/import/client_review/
 
 
-
-1) DESIGN RULES (from lecture)
-------------------------------
-[ ] Schema result must be in 3rd Normal Form (3NF).
-[ ] Generate data (AI OK for generation).
-[ ] Entity content should follow Old Westbury catalog (names, depts, courses).
-[ ] DO NOT copy any real master schedules.
-
-
-2) OPEN QUESTIONS FOR CLIENT (confirm before generating)
---------------------------------------------------------
-[x] Undergraduates: CLIENT CONFIRMED total = **1,200** (not 12,000).
-      Slide breakdown is literal: 300 per class (200 FT + 100 PT).
-[ ] Graduates: 300 total (PhD + Masters). PhD = 50 of those 300 — confirm.
-[ ] Masters = 300 − 50 = 250 — confirm.
-[ ] "12 majors" and "12 departments": one major per dept, or can one dept
-      offer multiple majors (example: CS dept → CS + MIS)?
-[ ] Minors: required counts? same 12? optional?
-[x] Faculty: CLIENT CONFIRMED = **400** (300 full-time, 100 part-time).
-[ ] Sections / enrollments: any required totals this lecture?
-[ ] Terms: Fall/Spring only, or Summer too?
-[ ] IDs: slide says **7-digit random** — confirm (app currently uses 6-digit).
+LECTURE RULES
+-------------
+- Schema in 3rd Normal Form (3NF)
+- Generate realistic university naming (AI OK)
+- Entity data may follow Old Westbury catalog
+- Do NOT copy any master schedules from Old Westbury
+- IDs: 7-digit random (lecture)
+- Courses can have 0 prerequisites or more than one
 
 
-3) STUDENT HEADCOUNTS (CLIENT: 1,200 UG)
-----------------------------------------
-Undergraduates TOTAL = **1,200**
+HEADCOUNTS (agreed)
+-------------------
+Undergraduates: 1,200 total
 
   Class year     Total   Full-time   Part-time
   -------------  ------  ----------  ---------
@@ -64,118 +29,47 @@ Undergraduates TOTAL = **1,200**
   Senior         300     200         100
   UG TOTAL       1,200   800         400
 
-Check: 300 × 4 = 1,200 ✓ | 200+100 = 300 per class ✓
+Graduates: 300 total (200 full-time, 100 part-time)
+  - Includes Masters + PhD
+  - PhD subset: 50 (20 full-time, 30 part-time)
+  - Masters (rest): 250
 
-Graduates (300 total: PhD + Masters) — as on slide unless he changes:
+Faculty: 400 total
+  - Full-time: 300
+  - Part-time: 100
 
-  Group          Total   Full-time   Part-time
-  -------------  ------  ----------  ---------
-  All graduate   300     200         100
-  PhD (subset)    50      20          30
-  Masters (rest) 250     180          70
-    (Masters FT/PT = all-grad minus PhD: 200−20 / 100−30)
-
-GRAND TOTAL students: 1,200 + 300 = **1,500**
+People total: 1,200 UG + 300 grad + 400 faculty = 1,900
 
 
-3b) FACULTY HEADCOUNTS (CLIENT CONFIRMED)
------------------------------------------
-  Faculty total     400
-  Full-time         300
-  Part-time         100
-  Check: 300 + 100 = 400 ✓
-
-PEOPLE TOTAL (students + faculty): 1,500 + 400 = **1,900**
+STRUCTURE TARGETS
+-----------------
+- Departments: 12 (examples: Math, CS)
+- Majors: 12 (example: CS dept offers CS and MIS)
+- Minors: TBD with professor
+- Courses: catalog-style; majors/minors; prerequisites as above
 
 
-4) DEPARTMENTS / MAJORS / MINORS
---------------------------------
-[ ] Departments: 12 total
-      Examples from lecture: Math Dept, CS Dept
-[ ] Majors: 12 total
-      Example: CS Dept offers CS major and MIS major
-[ ] Minors: _____ (fill after client answer)
-[ ] Courses: from Old Westbury catalog (no invented fake catalog codes
-      that contradict OW naming if avoidable)
+SAMPLE FILES (look over / fix)
+------------------------------
+storage/import/client_review/
+
+  00_README.txt
+  01_departments.txt
+  02_majors.txt
+  03_minors.txt
+  04_faculty.txt
+  05_faculty_departments.txt
+  06_students.txt
+  07_undergrad_detail.txt
+  08_student_major_minor.txt
+  09_grad_detail.txt
+  10_courses_sample.txt
+  SAMPLE_BY_CLASS_AND_FACULTY.txt   ← easiest overview by class year + faculty
+  SAMPLE_20_PEOPLE.txt
 
 
-5) TEXT FILES WE WILL GENERATE (for row-by-row review)
-------------------------------------------------------
-Put drafts in: storage/import/client_review/
-(Create folder when generation starts.)
-
-Suggested files (CSV or TSV — one entity per file):
-
-  File                         Purpose                        Expected rows*
-  ---------------------------  -----------------------------  -------------
-  departments.txt              12 depts                       12
-  majors.txt                   12 majors (+ owning dept)      12
-  minors.txt                   minors (if required)           TBD
-  students_undergrad.txt       UG roster + year + FT/PT       1,200
-  students_graduate.txt        Grad roster + MS/PhD + FT/PT   300
-  faculty.txt                  Faculty roster + FT/PT         400
-  courses.txt                  Catalog courses                TBD
-  (later) sections.txt         Offerings — invent schedules   TBD
-  (later) enrollments.txt      Student section links          TBD
-
-  *Expected rows = after client confirms section 2.
-
-Row format notes:
-  - Header row required.
-  - Stable IDs (student_id, dept_id) so we can re-import cleanly.
-  - No passwords / real PII of real people.
-  - School email domain: @ashford.edu (project brand).
-
-
-6) VERIFICATION CHECKLIST (client sign-off)
--------------------------------------------
-Phase 1 (sample ≈ 20 people) — do this FIRST:
-
-[ ] Reviewed storage/import/client_review/SAMPLE_20_PEOPLE.txt
-[ ] Faculty rows look OK
-[ ] Student major / minor rows look OK
-[ ] Grad MS + PhD examples OK
-[ ] Client OK to proceed to full generation
-
-Before full MySQL import (Phase 2):
-
-[ ] Section 2 questions answered in writing (or notes below).
-[ ] Department list (12) looks correct for Old Westbury–style catalog.
-[ ] Major list (12) + which dept owns each major — approved.
-[ ] Undergrad sample rows (e.g. 10 Freshman FT, 10 Freshman PT, …) OK.
-[ ] Grad sample rows (Masters + PhD, FT/PT) OK.
-[ ] Totals match section 3 (1,200 UG + 300 grad = 1,500; faculty 400).
-[ ] No copied master schedule from another school/system.
-[ ] Client initials / date: _____________  _____________
-
-
-7) AFTER APPROVAL — IMPORT NOTES
---------------------------------
-Only then:
-  - Map text files → storage/import/*.csv (or extend import scripts)
-  - php scripts/import_all.php (or dedicated seed script)
-  - SQL count checks must match section 3
-
-Current local DB (for awareness only — NOT the target yet):
-  - departments ≈ 9 (need 12)
-  - students ≈ 2000 (will be rebuilt/resized to agreed totals)
-
-
-8) CLIENT ANSWERS / LECTURE FOLLOW-UPS
--------------------------------------
-(Paste more slide notes here as they come.)
-
-Q: Undergrad 1,200 vs 12,000?
-A: CLIENT CONFIRMED — **1,200 undergraduates** (slide "12000" was a typo / misread).
-   Breakdown as written: 300 per class (200 FT + 100 PT). Grad 300. Faculty 400.
-   Grand total people: 1,500 students + 400 faculty = 1,900.
-
-Q: One dept can own multiple majors?
-A:
-
-Q: Minors count?
-A:
-
-Q: Other entities required this week?
-A: Faculty = **400** (300 full-time, 100 part-time) — confirmed 2026-09-17.
-
+NOTES
+-----
+- Sample is small on purpose (easy to read). Full 1,200 / 400 comes later.
+- School email brand in samples: @ashford.edu
+- No section/meeting-time / master-schedule rows in the sample

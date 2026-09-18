@@ -47,4 +47,4 @@ GRAD
 100014 Omar Diaz        PhD      PT  COM
 
 
-See 11_VERIFY_CHECKLIST.txt for sign-off.
+See docs/CLIENT_DATA_SPEC.txt for full headcount targets.
