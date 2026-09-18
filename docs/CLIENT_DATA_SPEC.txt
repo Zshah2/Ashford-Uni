@@ -37,10 +37,8 @@ Target mix:
 
 2) OPEN QUESTIONS FOR CLIENT (confirm before generating)
 --------------------------------------------------------
-[x] Undergraduates: CLIENT CONFIRMED total = **12,000**.
-      Slide lists 300/200/100 per class (adds to 1,200 as written).
-      We treat that as the **ratio** and scale ×10 to hit 12,000:
-        3,000 per class = 2,000 FT + 1,000 PT.
+[x] Undergraduates: CLIENT CONFIRMED total = **1,200** (not 12,000).
+      Slide breakdown is literal: 300 per class (200 FT + 100 PT).
 [ ] Graduates: 300 total (PhD + Masters). PhD = 50 of those 300 — confirm.
 [ ] Masters = 300 − 50 = 250 — confirm.
 [ ] "12 majors" and "12 departments": one major per dept, or can one dept
@@ -52,20 +50,19 @@ Target mix:
 [ ] IDs: slide says **7-digit random** — confirm (app currently uses 6-digit).
 
 
-3) STUDENT HEADCOUNTS (CLIENT: 12,000 UG)
------------------------------------------
-Undergraduates TOTAL = **12,000**
-(Slide pattern 300/200/100 × 10)
+3) STUDENT HEADCOUNTS (CLIENT: 1,200 UG)
+----------------------------------------
+Undergraduates TOTAL = **1,200**
 
-  Class year     Total    Full-time   Part-time
-  -------------  -------  ----------  ---------
-  Freshman       3,000    2,000       1,000
-  Sophomore      3,000    2,000       1,000
-  Junior         3,000    2,000       1,000
-  Senior         3,000    2,000       1,000
-  UG TOTAL       12,000   8,000       4,000
+  Class year     Total   Full-time   Part-time
+  -------------  ------  ----------  ---------
+  Freshman       300     200         100
+  Sophomore      300     200         100
+  Junior         300     200         100
+  Senior         300     200         100
+  UG TOTAL       1,200   800         400
 
-Check: 3,000 × 4 = 12,000 ✓ | 2,000+1,000 = 3,000 per class ✓
+Check: 300 × 4 = 1,200 ✓ | 200+100 = 300 per class ✓
 
 Graduates (300 total: PhD + Masters) — as on slide unless he changes:
 
@@ -76,7 +73,7 @@ Graduates (300 total: PhD + Masters) — as on slide unless he changes:
   Masters (rest) 250     180          70
     (Masters FT/PT = all-grad minus PhD: 200−20 / 100−30)
 
-GRAND TOTAL students: 12,000 + 300 = **12,300**
+GRAND TOTAL students: 1,200 + 300 = **1,500**
 
 
 3b) FACULTY HEADCOUNTS (CLIENT CONFIRMED)
@@ -86,7 +83,7 @@ GRAND TOTAL students: 12,000 + 300 = **12,300**
   Part-time         100
   Check: 300 + 100 = 400 ✓
 
-PEOPLE TOTAL (students + faculty): 12,300 + 400 = **12,700**
+PEOPLE TOTAL (students + faculty): 1,500 + 400 = **1,900**
 
 
 4) DEPARTMENTS / MAJORS / MINORS
@@ -112,8 +109,9 @@ Suggested files (CSV or TSV — one entity per file):
   departments.txt              12 depts                       12
   majors.txt                   12 majors (+ owning dept)      12
   minors.txt                   minors (if required)           TBD
-  students_undergrad.txt       UG roster + year + FT/PT       12,000
+  students_undergrad.txt       UG roster + year + FT/PT       1,200
   students_graduate.txt        Grad roster + MS/PhD + FT/PT   300
+  faculty.txt                  Faculty roster + FT/PT         400
   courses.txt                  Catalog courses                TBD
   (later) sections.txt         Offerings — invent schedules   TBD
   (later) enrollments.txt      Student section links          TBD
@@ -144,7 +142,7 @@ Before full MySQL import (Phase 2):
 [ ] Major list (12) + which dept owns each major — approved.
 [ ] Undergrad sample rows (e.g. 10 Freshman FT, 10 Freshman PT, …) OK.
 [ ] Grad sample rows (Masters + PhD, FT/PT) OK.
-[ ] Totals match section 3 (12,000 UG + 300 grad = 12,300).
+[ ] Totals match section 3 (1,200 UG + 300 grad = 1,500; faculty 400).
 [ ] No copied master schedule from another school/system.
 [ ] Client initials / date: _____________  _____________
 
@@ -166,9 +164,9 @@ Current local DB (for awareness only — NOT the target yet):
 (Paste more slide notes here as they come.)
 
 Q: Undergrad 1,200 vs 12,000?
-A: CLIENT CONFIRMED — **12,000 undergraduates**.
-   Slide's 300/200/100 per class is treated as ratio ×10 → 3,000 / 2,000 / 1,000.
-   Grad still 300. Grand total students: 12,300.
+A: CLIENT CONFIRMED — **1,200 undergraduates** (slide "12000" was a typo / misread).
+   Breakdown as written: 300 per class (200 FT + 100 PT). Grad 300. Faculty 400.
+   Grand total people: 1,500 students + 400 faculty = 1,900.
 
 Q: One dept can own multiple majors?
 A:

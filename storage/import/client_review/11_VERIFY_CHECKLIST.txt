@@ -50,7 +50,7 @@ D) CLIENT DECISIONS
 [ ] ID ranges OK (students 100xxx, faculty 900xxx)?
 [ ] Major codes (M-CS, M-MIS, …) OK?
 [ ] Expand later to 12 depts / 12 majors?
-[ ] Full headcount target: 12,000 UG + 300 grad + 400 faculty (300 FT / 100 PT)
+[ ] Full headcount target: 1,200 UG + 300 grad + 400 faculty (300 FT / 100 PT)
 [ ] Approve Phase 1 sample?  Yes / No / Changes: ________
 
 

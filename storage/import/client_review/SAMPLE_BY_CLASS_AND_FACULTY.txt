@@ -73,10 +73,10 @@ People total:        16
 ══════════════════════════════════════════════
 LATER FULL TARGET (for reference)
 ══════════════════════════════════════════════
-Freshman   3,000 (2,000 FT / 1,000 PT)
-Sophomore  3,000 (2,000 FT / 1,000 PT)
-Junior     3,000 (2,000 FT / 1,000 PT)
-Senior     3,000 (2,000 FT / 1,000 PT)
-UG total  12,000
+Freshman     300 (200 FT / 100 PT)
+Sophomore    300 (200 FT / 100 PT)
+Junior       300 (200 FT / 100 PT)
+Senior       300 (200 FT / 100 PT)
+UG total   1,200
 Grad         300 (50 PhD inside that)
 Faculty      400 (300 FT / 100 PT)
