@@ -11,6 +11,9 @@ require_once __DIR__ . '/../app/lib/admin_term_policy.php';
 require __DIR__ . '/../app/lib/auth.php';
 require __DIR__ . '/../app/lib/ui.php';
 require __DIR__ . '/../app/lib/csrf.php';
+require_once __DIR__ . '/../app/lib/northbridge_email.php';
+require_once __DIR__ . '/../app/lib/us_student_phone.php';
+require_once __DIR__ . '/../app/lib/people_validate.php';
 
 header('Content-Type: text/html; charset=utf-8');
 
@@ -23,12 +26,20 @@ $isAdmin = auth_is_admin();
 $isLimited = auth_is_limited();
 $isViewer = auth_is_viewer();
 $roleLabel = $isViewer ? 'Viewer' : ($isLimited ? 'Limited Admin' : 'Admin');
+$roleNote = 'Admin: full access, including grades.';
+if ($isViewer) {
+    $roleNote = 'Viewer: browse only. No add/drop or hold changes.';
+} elseif ($isLimited) {
+    $roleNote = 'Limited: holds and registration add/drop. No grade entry.';
+} elseif (!auth_can_post_grades()) {
+    $roleNote = 'Admin: same tools as full admin, except entering grades.';
+}
 $canRegister = auth_can_manage_registration();
 $canManageHolds = auth_can_manage_holds();
-$canPostGrades = $isAdmin;
+$canPostGrades = auth_can_post_grades();
 
 $csrf = csrf_token();
-$pageTitle = 'Administration — Northbridge College';
+$pageTitle = 'Administration — Ashford College';
 $pdo = db();
 $appCfg = (array)config('app');
 $defaultMaxCredits = (int)(($appCfg['registration']['default_max_credits'] ?? 18));
@@ -37,7 +48,7 @@ if ($defaultMaxCredits < 1) {
 }
 
 $view = (string)($_GET['view'] ?? 'dashboard');
-$validViews = ['dashboard', 'people', 'schedule', 'courses', 'course', 'enrollment', 'departments', 'department', 'registration', 'reports', 'messages', 'settings', 'catalog', 'terms', 'holds', 'accounts'];
+$validViews = ['dashboard', 'people', 'schedule', 'courses', 'course', 'enrollment', 'departments', 'department', 'registration', 'reports', 'messages', 'settings', 'catalog', 'terms', 'holds', 'accounts', 'team'];
 if (!in_array($view, $validViews, true)) {
     $view = 'dashboard';
 }
@@ -178,8 +189,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         header('Location: ' . url('/admin.php?view=' . rawurlencode($view) . '&msg=readonly'));
         exit;
     }
+    if (!$canPostGrades && in_array((string)($_POST['action'] ?? ''), ['grade_upsert', 'people_scr_upsert'], true)) {
+        header('Location: ' . url('/admin.php?view=' . rawurlencode($view) . '&msg=forbidden'));
+        exit;
+    }
     if ($isLimited) {
-        $blocked = ['grade_upsert', 'people_scr_upsert', 'catalog_course_save', 'catalog_prereqs_save', 'section_save', 'section_update', 'department_save', 'department_chair_save', 'term_registration_save', 'auth_password_reset', 'auth_login_save', 'auth_email_save', 'auth_user_active', 'reg_promote'];
+        $blocked = ['grade_upsert', 'people_scr_upsert', 'people_create', 'catalog_course_save', 'catalog_prereqs_save', 'section_save', 'section_update', 'department_save', 'department_chair_save', 'term_registration_save', 'auth_password_reset', 'auth_login_save', 'auth_email_save', 'auth_user_active', 'reg_promote'];
         $act = (string)($_POST['action'] ?? '');
         if (in_array($act, $blocked, true)) {
             header('Location: ' . url('/admin.php?view=' . rawurlencode($view) . '&msg=forbidden'));
@@ -266,17 +281,18 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $params[] = $stateIn;
         }
         if ($emailIn !== '') {
-            if (filter_var($emailIn, FILTER_VALIDATE_EMAIL)) {
+            if (northbridge_email_is_school($emailIn)) {
                 $sets[] = 'email = ?';
-                $params[] = $emailIn;
+                $params[] = strtolower($emailIn);
             } else {
                 $inputErr = true;
             }
         }
         if ($phoneIn !== '') {
-            if (preg_match('/^[0-9+\-\s().]{7,40}$/', $phoneIn)) {
+            $phoneNorm = northbridge_normalize_us_phone($phoneIn);
+            if ($phoneNorm !== null) {
                 $sets[] = 'phone_number = ?';
-                $params[] = $phoneIn;
+                $params[] = $phoneNorm;
             } else {
                 $inputErr = true;
             }
@@ -682,17 +698,19 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $paramsU[] = $stateIn;
         }
         if ($emailIn !== '') {
-            if (filter_var($emailIn, FILTER_VALIDATE_EMAIL)) {
+            if (northbridge_email_is_school($emailIn)) {
                 $setsU[] = 'email = ?';
-                $paramsU[] = $emailIn;
+                $paramsU[] = strtolower($emailIn);
             } else {
                 $inputErr = true;
             }
         }
+        $phoneNormFac = null;
         if ($phoneIn !== '') {
-            if (preg_match('/^[0-9+\-\s().]{7,40}$/', $phoneIn)) {
+            $phoneNormFac = northbridge_normalize_us_phone($phoneIn);
+            if ($phoneNormFac !== null) {
                 $setsU[] = 'phone_number = ?';
-                $paramsU[] = $phoneIn;
+                $paramsU[] = $phoneNormFac;
             } else {
                 $inputErr = true;
             }
@@ -713,13 +731,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         }
         $setsF = [];
         $paramsF = [];
-        if ($emailIn !== '') {
+        if ($emailIn !== '' && northbridge_email_is_school($emailIn)) {
             $setsF[] = 'email = ?';
-            $paramsF[] = $emailIn;
+            $paramsF[] = strtolower($emailIn);
         }
-        if ($phoneIn !== '') {
+        if ($phoneNormFac !== null) {
             $setsF[] = 'phone_number = ?';
-            $paramsF[] = $phoneIn;
+            $paramsF[] = $phoneNormFac;
         }
         if ($officeIn !== '') {
             $setsF[] = 'office_number = ?';
@@ -734,7 +752,205 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         exit;
     }
 
-    if ($action === 'people_scr_upsert' && $isAdmin) {
+    if ($action === 'people_create' && $isAdmin) {
+        $personType = trim((string)($_POST['person_type'] ?? ''));
+        $uidRaw = trim((string)($_POST['user_id'] ?? ''));
+        $first = trim((string)($_POST['first_name'] ?? ''));
+        $middle = trim((string)($_POST['middle_name'] ?? ''));
+        $last = trim((string)($_POST['last_name'] ?? ''));
+        $emailIn = trim((string)($_POST['email'] ?? ''));
+        $phoneIn = trim((string)($_POST['phone'] ?? ''));
+        $genderIn = trim((string)($_POST['gender'] ?? ''));
+        $dobIn = trim((string)($_POST['dob'] ?? ''));
+        $deptId = strtoupper(trim((string)($_POST['dept_id'] ?? '')));
+        $officeIn = trim((string)($_POST['office_number'] ?? ''));
+        $rankIn = trim((string)($_POST['rank'] ?? ''));
+        $facTypeIn = trim((string)($_POST['faculty_type'] ?? ''));
+        $stuTypeIn = trim((string)($_POST['student_type'] ?? ''));
+        $streetIn = trim((string)($_POST['street'] ?? ''));
+        $cityIn = trim((string)($_POST['city'] ?? ''));
+        $stateIn = strtoupper(trim((string)($_POST['state'] ?? '')));
+        $zipIn = trim((string)($_POST['zip_code'] ?? ''));
+
+        $failRedirect = url('/admin.php?view=people&msg=person_invalid#add-person');
+
+        if (!in_array($personType, ['Student', 'Faculty'], true)) {
+            header('Location: ' . $failRedirect);
+            exit;
+        }
+        if ($uidRaw === '' || !ctype_digit($uidRaw) || strlen($uidRaw) !== 6) {
+            header('Location: ' . $failRedirect);
+            exit;
+        }
+        $uid = (int)$uidRaw;
+        if (!people_id_is_valid_for_type($uid, $personType)) {
+            header('Location: ' . $failRedirect);
+            exit;
+        }
+        if (!people_name_is_valid($first) || !people_name_is_valid($last) || !people_name_is_valid($middle, true)) {
+            header('Location: ' . $failRedirect);
+            exit;
+        }
+
+        $exists = $pdo->prepare('SELECT 1 FROM users WHERE user_id = ? LIMIT 1');
+        $exists->execute([$uid]);
+        if ($exists->fetchColumn()) {
+            header('Location: ' . url('/admin.php?view=people&msg=person_exists#add-person'));
+            exit;
+        }
+
+        if ($emailIn === '' || !northbridge_email_is_school($emailIn)) {
+            header('Location: ' . $failRedirect);
+            exit;
+        }
+        $email = strtolower($emailIn);
+        if (northbridge_school_email_in_use($pdo, $email, $uid)) {
+            header('Location: ' . url('/admin.php?view=people&msg=person_email_taken#add-person'));
+            exit;
+        }
+
+        $phoneNorm = northbridge_normalize_us_phone($phoneIn);
+        if ($phoneNorm === null || !people_phone_area_code_allowed($phoneNorm)) {
+            header('Location: ' . $failRedirect);
+            exit;
+        }
+        $phone = $phoneNorm;
+
+        $allowedG = admin_people_genders();
+        if ($genderIn === '' || !in_array($genderIn, $allowedG, true)) {
+            header('Location: ' . $failRedirect);
+            exit;
+        }
+        $gender = $genderIn;
+
+        $dob = null;
+        if (!people_dob_is_valid($dobIn, $dob)) {
+            header('Location: ' . $failRedirect);
+            exit;
+        }
+
+        if ($deptId === '') {
+            header('Location: ' . $failRedirect);
+            exit;
+        }
+        $dchk = $pdo->prepare('SELECT 1 FROM departments WHERE dept_id = ? LIMIT 1');
+        $dchk->execute([$deptId]);
+        if (!$dchk->fetchColumn()) {
+            header('Location: ' . $failRedirect);
+            exit;
+        }
+        $deptOk = $deptId;
+
+        if ($personType === 'Student') {
+            if (!in_array($stuTypeIn, ['Fulltime', 'Parttime'], true)) {
+                header('Location: ' . $failRedirect);
+                exit;
+            }
+        } else {
+            if ($rankIn === '' || !in_array($rankIn, ['Adjunct', 'Non-Tenured', 'Tenured'], true)) {
+                header('Location: ' . $failRedirect);
+                exit;
+            }
+            if ($facTypeIn === '' || !in_array($facTypeIn, ['Fulltime', 'Parttime'], true)) {
+                header('Location: ' . $failRedirect);
+                exit;
+            }
+            if (!people_office_is_valid($officeIn, true)) {
+                header('Location: ' . $failRedirect);
+                exit;
+            }
+        }
+
+        if ($stateIn !== '' && !in_array($stateIn, admin_people_us_state_codes(), true)) {
+            header('Location: ' . $failRedirect);
+            exit;
+        }
+        if (!people_us_zip_is_valid($zipIn, true)) {
+            header('Location: ' . $failRedirect);
+            exit;
+        }
+        if (strlen($streetIn) > 200 || strlen($cityIn) > 120) {
+            header('Location: ' . $failRedirect);
+            exit;
+        }
+
+        try {
+            $pdo->beginTransaction();
+            $pdo->prepare('
+              INSERT INTO users (
+                user_id, first_name, middle_name, last_name,
+                street, city, state, zip_code,
+                email, phone_number, gender, dob, user_type
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ')->execute([
+                $uid,
+                $first,
+                $middle !== '' ? $middle : null,
+                $last,
+                $streetIn !== '' ? $streetIn : null,
+                $cityIn !== '' ? $cityIn : null,
+                $stateIn !== '' ? $stateIn : null,
+                $zipIn !== '' ? $zipIn : null,
+                $email,
+                $phone,
+                $gender,
+                $dob,
+                $personType,
+            ]);
+
+            if ($personType === 'Student') {
+                $pdo->prepare('INSERT INTO students (student_id) VALUES (?)')->execute([$uid]);
+                try {
+                    $pdo->prepare('
+                      INSERT INTO undergrad_students (student_id, student_type)
+                      VALUES (?, ?)
+                    ')->execute([$uid, $stuTypeIn]);
+                } catch (Throwable) {
+                }
+                try {
+                    $pdo->prepare('
+                      INSERT INTO student_departments (student_id, dept_id, declaration_role, date_of_declaration)
+                      VALUES (?, ?, \'major\', CURDATE())
+                    ')->execute([$uid, $deptOk]);
+                } catch (Throwable) {
+                    $pdo->prepare('
+                      INSERT INTO student_departments (student_id, dept_id, date_of_declaration)
+                      VALUES (?, ?, CURDATE())
+                    ')->execute([$uid, $deptOk]);
+                }
+            } else {
+                $pdo->prepare('
+                  INSERT INTO faculty (faculty_id, office_number, `rank`, faculty_type, email, phone_number)
+                  VALUES (?, ?, ?, ?, ?, ?)
+                ')->execute([
+                    $uid,
+                    $officeIn !== '' ? $officeIn : null,
+                    $rankIn,
+                    $facTypeIn,
+                    $email,
+                    $phone,
+                ]);
+                $pdo->prepare('
+                  INSERT INTO faculty_departments (faculty_id, dept_id, percent_time, date_of_appointment)
+                  VALUES (?, ?, 100, CURDATE())
+                ')->execute([$uid, $deptOk]);
+            }
+
+            $pdo->commit();
+        } catch (Throwable) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            header('Location: ' . $failRedirect);
+            exit;
+        }
+
+        admin_audit($pdo, 'people_create', $personType . ' user_id=' . $uid);
+        header('Location: ' . url('/admin.php?view=people&id=' . $uid . '&people_panel=info&msg=person_created'));
+        exit;
+    }
+
+    if ($action === 'people_scr_upsert' && $canPostGrades) {
         $sid = isset($_POST['student_id']) && ctype_digit((string)$_POST['student_id']) ? (int)$_POST['student_id'] : null;
         $redirectId = $sid ?? 0;
         if ($sid === null) {
@@ -1532,7 +1748,7 @@ $notifPreviews = [
         'total' => 0,
         'columns' => ['user_id' => 'user_id', 'name' => 'name', 'email' => 'email'],
         'rows' => [],
-        'href' => url('/admin.php?view=schedule&q=%40northbridge.edu'),
+        'href' => url('/admin.php?view=schedule&q=%40ashford.edu'),
         'empty' => 'SELECT returned 0 rows.',
     ],
     'student_phone' => [
@@ -1550,7 +1766,7 @@ $notifPreviews = [
         'total' => 0,
         'columns' => ['faculty_id' => 'faculty_id', 'name' => 'name', 'email' => 'email'],
         'rows' => [],
-        'href' => url('/admin.php?view=schedule&q=%40northbridge.edu'),
+        'href' => url('/admin.php?view=schedule&q=%40ashford.edu'),
         'empty' => 'SELECT returned 0 rows.',
     ],
     'faculty_phone' => [
@@ -2049,15 +2265,13 @@ function nav_group_label(string $label): string
       <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
         <div class="flex min-w-0 flex-1 items-center justify-between gap-3 lg:justify-start lg:gap-4">
           <a href="<?= htmlspecialchars(url('/admin.php?view=dashboard')) ?>" class="flex min-w-0 items-center gap-3">
-            <img
-              src="<?= htmlspecialchars(url('/assets/img/northbridge_university_icon.svg')) ?>"
-              alt=""
-              width="40"
-              height="40"
-              class="h-10 w-10 shrink-0 rounded-xl ring-1 ring-slate-200 dark:ring-slate-700"
-            />
+            <?php
+            $logoClass = 'h-9 w-auto max-w-[10rem] shrink-0 object-contain sm:h-10 sm:max-w-[12rem]';
+            $logoAlt = 'Ashford Admin';
+            require __DIR__ . '/../app/views/partials/brand_logo.php';
+            ?>
             <div class="min-w-0">
-              <div class="truncate text-sm font-semibold text-slate-900 dark:text-white">Northbridge Admin</div>
+              <div class="truncate text-sm font-semibold text-slate-900 dark:text-white">Ashford Admin</div>
               <div class="text-[11px] text-slate-500 dark:text-slate-400">Admin dashboard</div>
             </div>
           </a>
@@ -2172,7 +2386,7 @@ function nav_group_label(string $label): string
       <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-800">
         <div>
           <div class="text-sm font-semibold text-slate-900 dark:text-white">Menu</div>
-          <div class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Northbridge Admin</div>
+          <div class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Ashford Admin</div>
         </div>
         <button type="button" id="adminMenuClose" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
           Close
@@ -2189,13 +2403,7 @@ function nav_group_label(string $label): string
         </form>
 
         <p class="mt-4 text-xs leading-relaxed text-slate-500">
-          <?php if ($isViewer): ?>
-            <strong class="text-slate-600">Viewer:</strong> browse only. No add/drop or hold changes.
-          <?php elseif ($isLimited): ?>
-            <strong class="text-slate-600">Limited:</strong> holds, registration add/drop. No grade import.
-          <?php else: ?>
-            <strong class="text-slate-600">Admin:</strong> full access.
-          <?php endif; ?>
+          <strong class="text-slate-600"><?= htmlspecialchars($roleLabel) ?>:</strong> <?= htmlspecialchars(preg_replace('/^[^:]+:\s*/', '', $roleNote)) ?>
         </p>
       </div>
     </div>
@@ -2209,7 +2417,7 @@ function nav_group_label(string $label): string
         'forbidden' => ['error', 'Your role cannot perform that action.'],
         'profile_saved' => ['success', 'Student record saved.'],
         'faculty_saved' => ['success', 'Faculty profile saved.'],
-        'profile_invalid' => ['error', 'Profile was not updated — check email or phone format.'],
+        'profile_invalid' => ['error', 'Profile was not updated — use an @ashford.edu email and a US phone like (516) 867-4800.'],
         'decl_limit' => ['error', 'A student can only have 1 major and 1 minor. Update the declarations and try again.'],
         'decl_conflict' => ['error', 'Major and minor cannot be in the same department.'],
         'decl_same_as_other' => ['error', 'Major cannot match current minor (and minor cannot match current major).'],
@@ -2228,6 +2436,10 @@ function nav_group_label(string $label): string
         'dept_saved' => ['success', 'Department created. Click it in the directory below to open it.'],
         'dept_invalid' => ['error', 'Department was not saved — use a unique code (letters/numbers, max 10) and a name.'],
         'dept_exists' => ['error', 'That department code already exists.'],
+        'person_created' => ['success', 'Person created. You can update details, declarations, or holds below.'],
+        'person_invalid' => ['error', 'Person was not created — check ID range (students 1000000–1999999, faculty 9000000–9999999), @ashford.edu email, NY-area phone, required fields, and formats.'],
+        'person_exists' => ['error', 'That ID already exists. Search for it above or pick a different ID.'],
+        'person_email_taken' => ['error', 'That school email is already used by another person.'],
     ];
     if ($flashMsg !== '' && isset($flashMap[$flashMsg])) {
         [$ftone, $ftext] = $flashMap[$flashMsg];
@@ -2263,13 +2475,7 @@ function nav_group_label(string $label): string
             <button type="submit" class="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-rose-700 ring-1 ring-rose-200 hover:bg-rose-50 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-950/50">Log out</button>
           </form>
           <p class="mt-4 text-xs leading-relaxed text-slate-500">
-            <?php if ($isViewer): ?>
-              <strong class="text-slate-600">Viewer:</strong> browse only. No add/drop or hold changes.
-            <?php elseif ($isLimited): ?>
-              <strong class="text-slate-600">Limited:</strong> holds, registration add/drop. No grade import.
-            <?php else: ?>
-              <strong class="text-slate-600">Admin:</strong> full access.
-            <?php endif; ?>
+            <strong class="text-slate-600"><?= htmlspecialchars($roleLabel) ?>:</strong> <?= htmlspecialchars(preg_replace('/^[^:]+:\s*/', '', $roleNote)) ?>
           </p>
         </div>
       </aside>
@@ -2278,7 +2484,7 @@ function nav_group_label(string $label): string
           <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h1 class="<?= htmlspecialchars(ui_h1()) ?>">Dashboard</h1>
-              <p class="mt-2 <?= htmlspecialchars(ui_muted()) ?>">Operations snapshot — enrollment activity, data quality, and this term’s busiest sections.</p>
+              <p class="mt-2 <?= htmlspecialchars(ui_muted()) ?>"><?= htmlspecialchars($roleNote) ?> Enrollment activity, data quality, and this term’s busiest sections are below.<?php if ($isAdmin): ?> <a class="<?= htmlspecialchars(ui_link()) ?>" href="<?= htmlspecialchars(url('/admin.php?view=team')) ?>">Team access</a><?php endif; ?></p>
             </div>
             <div class="flex flex-wrap gap-2">
               <a class="<?= htmlspecialchars(ui_btn_secondary()) ?>" href="<?= htmlspecialchars(url('/admin.php?view=registration')) ?>">Registration</a>
@@ -2291,7 +2497,7 @@ function nav_group_label(string $label): string
               <div class="text-sm font-semibold text-amber-950 dark:text-amber-100">Alerts &amp; notices</div>
               <div class="flex flex-wrap gap-2 text-xs">
                 <div class="group relative admin-notif-wrap" tabindex="0" data-notif-wrap>
-                  <a class="<?= htmlspecialchars(ui_alert_pill()) ?>" href="<?= htmlspecialchars(url('/admin.php?view=schedule&q=%40northbridge.edu')) ?>">Email gaps (<?= (int)($dash['students_missing_email'] ?? 0) + (int)($dash['faculty_missing_email'] ?? 0) ?>)</a>
+                  <a class="<?= htmlspecialchars(ui_alert_pill()) ?>" href="<?= htmlspecialchars(url('/admin.php?view=schedule&q=%40ashford.edu')) ?>">Email gaps (<?= (int)($dash['students_missing_email'] ?? 0) + (int)($dash['faculty_missing_email'] ?? 0) ?>)</a>
                   <?php if ($adminNotifEmailGapPreviews !== []): ?>
                     <?php
                       $previews = $adminNotifEmailGapPreviews;
@@ -2541,7 +2747,7 @@ function nav_group_label(string $label): string
               <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Needs attention (detail)</div>
               <ul class="mt-4 space-y-2 text-sm">
                 <li class="flex items-center justify-between gap-3">
-                  <a class="font-semibold text-indigo-700 hover:underline" href="<?= htmlspecialchars(url('/admin.php?view=schedule&q=%40northbridge.edu')) ?>">Verify school emails</a>
+                  <a class="font-semibold text-indigo-700 hover:underline" href="<?= htmlspecialchars(url('/admin.php?view=schedule&q=%40ashford.edu')) ?>">Verify school emails</a>
                   <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700"><?= (int)($dash['students_missing_email'] ?? 0) + (int)($dash['faculty_missing_email'] ?? 0) ?></span>
                 </li>
                 <li class="flex items-center justify-between gap-3">
@@ -2863,6 +3069,40 @@ function nav_group_label(string $label): string
           require __DIR__ . '/../app/views/pages/admin/holds_directory.php';
           ?>
 
+        <?php elseif ($view === 'team'): ?>
+          <?php if (!$isAdmin): ?>
+            <h1 class="<?= htmlspecialchars(ui_h1()) ?>">Team access</h1>
+            <div class="mt-4 <?= htmlspecialchars(ui_flash('warn')) ?>">Team access requires an administrator role.</div>
+          <?php else: ?>
+            <?php
+            $teamEmails = [
+                'zshah2@oldwestbury.edu',
+                'sraza9@oldwestbury.edu',
+                'wbhatti1@oldwestbury.edu',
+                'asewell3@oldwestbury.edu',
+                'viewonly@ashford.edu',
+            ];
+            $teamRows = [];
+            try {
+                $placeholders = implode(',', array_fill(0, count($teamEmails), '?'));
+                $teamSt = $pdo->prepare("SELECT username, display_name, email, role FROM auth_users WHERE email IN ($placeholders)");
+                $teamSt->execute($teamEmails);
+                $byEmail = [];
+                foreach ($teamSt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $teamRow) {
+                    $byEmail[strtolower((string)$teamRow['email'])] = $teamRow;
+                }
+                foreach ($teamEmails as $teamEmail) {
+                    if (isset($byEmail[$teamEmail])) {
+                        $teamRows[] = $byEmail[$teamEmail];
+                    }
+                }
+            } catch (Throwable) {
+                $teamRows = [];
+            }
+            require __DIR__ . '/../app/views/pages/admin/team_access.php';
+            ?>
+          <?php endif; ?>
+
         <?php elseif ($view === 'accounts'): ?>
           <?php if (!$isAdmin): ?>
             <h1 class="<?= htmlspecialchars(ui_h1()) ?>">Accounts</h1>
@@ -3023,21 +3263,222 @@ function nav_group_label(string $label): string
                 </div>
                 <button class="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 sm:shrink-0" type="submit"><?= $idLookupHasSearch ? 'Search again' : 'Search' ?></button>
               </form>
-              <div id="people-recent-searches" class="mt-4 hidden rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5" aria-live="polite">
+              <div id="people-recent-searches" class="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5" aria-live="polite" hidden>
                 <div class="flex flex-wrap items-center gap-2">
-                  <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Recent lookups</span>
+                  <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Recent</span>
                   <div id="people-recent-search-links" class="flex flex-wrap gap-2"></div>
                   <button id="people-clear-recent-searches" type="button" class="text-xs font-semibold text-slate-500 hover:text-slate-900">Clear</button>
                 </div>
               </div>
             </div>
 
-            <?php if (!$idLookupHasSearch): ?>
+            <?php if (!$idLookupHasSearch && $isAdmin): ?>
+              <?php
+                $addPersonOpen = in_array($flashMsg, ['person_invalid', 'person_exists', 'person_email_taken'], true);
+                $addPersonDepts = [];
+                try {
+                    $addPersonDepts = $pdo->query('SELECT dept_id, dept_name FROM departments ORDER BY dept_name, dept_id')->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                } catch (Throwable) {
+                    $addPersonDepts = [];
+                }
+                $suggestedStudentId = people_suggest_next_id($pdo, 'Student');
+                $suggestedFacultyId = people_suggest_next_id($pdo, 'Faculty');
+                $suggestedId = $suggestedStudentId;
+                $stateCodes = admin_people_us_state_codes();
+                $dobMax = date('Y-m-d', strtotime('-16 years'));
+                $dobMin = date('Y-m-d', strtotime('-80 years'));
+              ?>
+              <details id="add-person" class="group scroll-mt-6 rounded-2xl border border-emerald-200 bg-emerald-50/40 shadow-sm open:bg-white dark:border-emerald-900 dark:bg-emerald-950/30 dark:open:bg-slate-900"<?= $addPersonOpen ? ' open' : '' ?>>
+                <summary class="cursor-pointer list-none px-5 py-4 text-sm font-semibold text-emerald-950 dark:text-emerald-100">
+                  <span class="inline-flex items-center gap-2">
+                    <span class="rounded-lg bg-emerald-600 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-white">Admin</span>
+                    Add person
+                  </span>
+                  <span class="mt-1 block text-xs font-normal text-emerald-900/80 dark:text-emerald-200/80">Create a student or faculty record in MySQL (not an admin login)</span>
+                </summary>
+                <form class="border-t border-emerald-200/80 px-5 py-5 dark:border-emerald-900/80" method="post" action="<?= htmlspecialchars(url('/admin.php?view=people')) ?>">
+                  <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>" />
+                  <input type="hidden" name="action" value="people_create" />
+                  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <div>
+                      <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500" for="ap-type">Type</label>
+                      <select id="ap-type" name="person_type" required class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm dark:border-slate-600 dark:bg-slate-950">
+                        <option value="Student">Student</option>
+                        <option value="Faculty">Faculty</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500" for="ap-id">ID (7 digits)</label>
+                      <input id="ap-id" name="user_id" type="text" inputmode="numeric" pattern="[0-9]{7}" maxlength="7" required value="<?= (int)$suggestedId ?>" data-suggest-student="<?= (int)$suggestedStudentId ?>" data-suggest-faculty="<?= (int)$suggestedFacultyId ?>" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 font-mono text-sm shadow-sm dark:border-slate-600 dark:bg-slate-950" />
+                      <p id="ap-id-hint" class="mt-1 text-xs text-slate-500">Students: 1000000–1999999 · Faculty: 9000000–9999999</p>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500" for="ap-dept">Department</label>
+                      <select id="ap-dept" name="dept_id" required class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm dark:border-slate-600 dark:bg-slate-950">
+                        <option value="">Select department…</option>
+                        <?php foreach ($addPersonDepts as $d): ?>
+                          <option value="<?= htmlspecialchars((string)$d['dept_id']) ?>">
+                            <?= htmlspecialchars((string)$d['dept_id']) ?> — <?= htmlspecialchars((string)($d['dept_name'] ?? '')) ?>
+                          </option>
+                        <?php endforeach; ?>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500" for="ap-first">First name</label>
+                      <input id="ap-first" name="first_name" required maxlength="50" pattern="[\p{L}][\p{L}\s'\-]{0,49}" title="Letters, spaces, hyphen, apostrophe only" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm dark:border-slate-600 dark:bg-slate-950" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500" for="ap-middle">Middle name</label>
+                      <input id="ap-middle" name="middle_name" maxlength="50" pattern="[\p{L}][\p{L}\s'\-]{0,49}" title="Letters, spaces, hyphen, apostrophe only" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm dark:border-slate-600 dark:bg-slate-950" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500" for="ap-last">Last name</label>
+                      <input id="ap-last" name="last_name" required maxlength="50" pattern="[\p{L}][\p{L}\s'\-]{0,49}" title="Letters, spaces, hyphen, apostrophe only" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm dark:border-slate-600 dark:bg-slate-950" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500" for="ap-email">School email</label>
+                      <input id="ap-email" name="email" type="email" required placeholder="jsmith@ashford.edu" pattern="[^@\s]+@ashford\.edu" title="Must end with @ashford.edu" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm dark:border-slate-600 dark:bg-slate-950" />
+                      <p class="mt-1 text-xs text-slate-500">Auto-fills from name · must be <span class="font-mono">@ashford.edu</span></p>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500" for="ap-phone">Phone (NY metro)</label>
+                      <input id="ap-phone" name="phone" required placeholder="(516) 867-4800" inputmode="tel" title="US phone with NY/NJ/CT/PA/MA area code" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm dark:border-slate-600 dark:bg-slate-950" />
+                      <p class="mt-1 text-xs text-slate-500">e.g. <span class="font-mono">(516) 867-4800</span> — area codes like 516, 718, 917, 201…</p>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500" for="ap-gender">Gender</label>
+                      <select id="ap-gender" name="gender" required class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm dark:border-slate-600 dark:bg-slate-950">
+                        <option value="">Select…</option>
+                        <?php foreach (admin_people_genders() as $g): ?>
+                          <option value="<?= htmlspecialchars($g) ?>"><?= htmlspecialchars($g) ?></option>
+                        <?php endforeach; ?>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500" for="ap-dob">Date of birth</label>
+                      <input id="ap-dob" name="dob" type="date" required min="<?= htmlspecialchars($dobMin) ?>" max="<?= htmlspecialchars($dobMax) ?>" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm dark:border-slate-600 dark:bg-slate-950" />
+                      <p class="mt-1 text-xs text-slate-500">Age must be 16–80</p>
+                    </div>
+                    <div data-ap-student>
+                      <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500" for="ap-stu-type">Student load</label>
+                      <select id="ap-stu-type" name="student_type" required class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm dark:border-slate-600 dark:bg-slate-950">
+                        <option value="Fulltime">Fulltime</option>
+                        <option value="Parttime">Parttime</option>
+                      </select>
+                    </div>
+                    <div data-ap-faculty class="hidden">
+                      <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500" for="ap-office">Office</label>
+                      <input id="ap-office" name="office_number" placeholder="AB-2024" pattern="[A-Za-z][A-Za-z0-9]{0,9}-[A-Za-z0-9]{1,10}" title="Format like AB-2024 or Lib-1106" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm dark:border-slate-600 dark:bg-slate-950" />
+                      <p class="mt-1 text-xs text-slate-500">Optional · e.g. <span class="font-mono">AB-2024</span></p>
+                    </div>
+                    <div data-ap-faculty class="hidden">
+                      <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500" for="ap-rank">Rank</label>
+                      <select id="ap-rank" name="rank" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm dark:border-slate-600 dark:bg-slate-950">
+                        <option value="">Select…</option>
+                        <option value="Adjunct">Adjunct</option>
+                        <option value="Non-Tenured">Non-Tenured</option>
+                        <option value="Tenured">Tenured</option>
+                      </select>
+                    </div>
+                    <div data-ap-faculty class="hidden">
+                      <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500" for="ap-fac-type">Faculty type</label>
+                      <select id="ap-fac-type" name="faculty_type" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm dark:border-slate-600 dark:bg-slate-950">
+                        <option value="">Select…</option>
+                        <option value="Fulltime">Fulltime</option>
+                        <option value="Parttime">Parttime</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500" for="ap-street">Street <span class="font-normal normal-case text-slate-400">(optional)</span></label>
+                      <input id="ap-street" name="street" maxlength="200" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm dark:border-slate-600 dark:bg-slate-950" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500" for="ap-city">City <span class="font-normal normal-case text-slate-400">(optional)</span></label>
+                      <input id="ap-city" name="city" maxlength="120" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm dark:border-slate-600 dark:bg-slate-950" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500" for="ap-state">State <span class="font-normal normal-case text-slate-400">(optional)</span></label>
+                      <select id="ap-state" name="state" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm dark:border-slate-600 dark:bg-slate-950">
+                        <option value="">—</option>
+                        <?php foreach ($stateCodes as $st): ?>
+                          <option value="<?= htmlspecialchars($st) ?>"><?= htmlspecialchars($st) ?></option>
+                        <?php endforeach; ?>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500" for="ap-zip">ZIP <span class="font-normal normal-case text-slate-400">(optional)</span></label>
+                      <input id="ap-zip" name="zip_code" inputmode="numeric" pattern="\d{5}(-\d{4})?" placeholder="11568" maxlength="10" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm dark:border-slate-600 dark:bg-slate-950" />
+                    </div>
+                  </div>
+                  <div class="mt-4 flex flex-wrap items-center gap-3">
+                    <button type="submit" class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500">Create person</button>
+                    <p class="text-xs text-slate-500">Opens the new record after save. Admin logins stay on Accounts / Create account.</p>
+                  </div>
+                </form>
+                <script>
+                (function () {
+                  var root = document.getElementById('add-person');
+                  if (!root) return;
+                  if (location.hash === '#add-person') root.open = true;
+
+                  var typeEl = document.getElementById('ap-type');
+                  var idEl = document.getElementById('ap-id');
+                  var firstEl = document.getElementById('ap-first');
+                  var lastEl = document.getElementById('ap-last');
+                  var emailEl = document.getElementById('ap-email');
+                  var rankEl = document.getElementById('ap-rank');
+                  var facTypeEl = document.getElementById('ap-fac-type');
+                  var emailTouched = false;
+                  var idTouched = false;
+
+                  if (emailEl) {
+                    emailEl.addEventListener('input', function () { emailTouched = true; });
+                  }
+                  if (idEl) {
+                    idEl.addEventListener('input', function () { idTouched = true; });
+                  }
+
+                  function sanitizeLast(s) {
+                    return String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '') || 'user';
+                  }
+                  function suggestEmail() {
+                    if (!emailEl || emailTouched) return;
+                    var f = (firstEl && firstEl.value || '').trim();
+                    var l = (lastEl && lastEl.value || '').trim();
+                    if (!f || !l) return;
+                    var letter = f.charAt(0).toLowerCase().replace(/[^a-z]/g, '') || 'u';
+                    emailEl.value = letter + sanitizeLast(l) + '@ashford.edu';
+                  }
+                  function syncType() {
+                    if (!typeEl) return;
+                    var isFac = typeEl.value === 'Faculty';
+                    root.querySelectorAll('[data-ap-student]').forEach(function (el) {
+                      el.classList.toggle('hidden', isFac);
+                    });
+                    root.querySelectorAll('[data-ap-faculty]').forEach(function (el) {
+                      el.classList.toggle('hidden', !isFac);
+                    });
+                    if (rankEl) rankEl.required = isFac;
+                    if (facTypeEl) facTypeEl.required = isFac;
+                    if (idEl && !idTouched) {
+                      idEl.value = isFac
+                        ? (idEl.getAttribute('data-suggest-faculty') || '9000000')
+                        : (idEl.getAttribute('data-suggest-student') || '1000000');
+                    }
+                  }
+
+                  if (typeEl) typeEl.addEventListener('change', syncType);
+                  if (firstEl) firstEl.addEventListener('input', suggestEmail);
+                  if (lastEl) lastEl.addEventListener('input', suggestEmail);
+                  syncType();
+                })();
+                </script>
+              </details>
+            <?php elseif (!$idLookupHasSearch): ?>
               <div id="add-person" class="scroll-mt-6 rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/60 p-5 shadow-sm">
                 <h2 class="text-sm font-semibold text-emerald-950">Add a person</h2>
                 <p class="mt-2 text-sm leading-relaxed text-slate-700">
-                  New students and faculty are usually loaded from registrar CSV import. After a record exists, search by ID above for enrollments, teaching assignments, and holds.
-                  To add another <strong class="font-semibold text-slate-800">admin login</strong>, sign out and use Create account on the sign-in page.
+                  Full admins can create student and faculty records here. Your role is read-only or limited — ask an admin, or load people from registrar CSV import.
                 </p>
               </div>
             <?php endif; ?>
@@ -3564,7 +4005,7 @@ function nav_group_label(string $label): string
                                 <th class="px-3 py-2">Term</th>
                                 <th class="px-3 py-2">Course</th>
                                 <th class="px-3 py-2">Grade</th>
-                                <th class="px-3 py-2"><abbr title="Quality points (per course, 4.0 scale)">Pts</abbr></th>
+                                <th class="px-3 py-2"><abbr title="GPA for this course on a 4.0 scale">GPA</abbr></th>
                                 <th class="px-3 py-2"><abbr title="Credits earned toward GPA">Cr</abbr></th>
                               </tr>
                             </thead>
@@ -3826,7 +4267,7 @@ function nav_group_label(string $label): string
                         <a class="font-semibold text-indigo-700 hover:underline" href="<?= htmlspecialchars(url('/admin.php?view=registration&student_id=' . (int)$peopleId . ($currentTermCode !== null ? '&term=' . rawurlencode($currentTermCode) : ''))) ?>">Open registration / add-drop for this student</a>
                       </div>
 
-                      <?php if ($isAdmin): ?>
+                      <?php if ($canPostGrades): ?>
                       <div class="border-t border-slate-200 pt-6">
                         <h3 class="text-sm font-semibold text-slate-900">Registrar: add or replace transcript grade</h3>
                         <p class="mt-1 text-xs text-slate-500">Creates or updates one row in <code class="rounded bg-slate-100 px-1">student_course_results</code>. Letter grades map to standard quality points; override points only if needed.</p>
@@ -5125,46 +5566,60 @@ function nav_group_label(string $label): string
     })();
 
     (function initPeopleRecentSearches() {
-      const form = document.querySelector('form[action*="admin.php"] input[name="view"][value="people"]');
       const input = document.getElementById('people-id-q');
+      const form = input ? input.closest('form') : null;
       const recentWrap = document.getElementById('people-recent-searches');
       const recentLinks = document.getElementById('people-recent-search-links');
       const clearButton = document.getElementById('people-clear-recent-searches');
       const storageKey = 'admin_people_recent_ids';
+      const peopleLookupBase = <?= json_encode(url('/admin.php?view=people&id='), JSON_UNESCAPED_SLASHES) ?>;
       if (!form || !input || !recentWrap || !recentLinks || !clearButton) return;
 
       const readRecent = function () {
         try {
           const parsed = JSON.parse(localStorage.getItem(storageKey) || '[]');
-          return Array.isArray(parsed) ? parsed.filter(function (id) { return /^\d+$/.test(String(id)); }).slice(0, 3) : [];
+          return Array.isArray(parsed) ? parsed.filter(function (id) { return /^\d+$/.test(String(id)); }).slice(0, 8) : [];
         } catch (e) {
           return [];
         }
       };
 
+      const rememberId = function (rawId) {
+        const id = String(rawId || '').trim();
+        if (!/^\d+$/.test(id)) return;
+        const ids = readRecent().filter(function (recentId) { return String(recentId) !== id; });
+        ids.unshift(id);
+        try { localStorage.setItem(storageKey, JSON.stringify(ids.slice(0, 8))); } catch (e) {}
+      };
+
       const renderRecent = function () {
         const ids = readRecent();
         recentLinks.innerHTML = '';
-        recentWrap.classList.toggle('hidden', ids.length === 0);
+        if (ids.length === 0) {
+          recentWrap.hidden = true;
+          return;
+        }
+        recentWrap.hidden = false;
         ids.forEach(function (id) {
           const link = document.createElement('a');
           link.className = 'rounded-lg border border-slate-200 bg-white px-2.5 py-1 font-mono text-xs font-semibold text-indigo-700 hover:bg-indigo-50';
-          link.href = '<?= htmlspecialchars(url('/admin.php?view=people&id='), ENT_QUOTES, 'UTF-8') ?>' + encodeURIComponent(String(id));
+          link.href = peopleLookupBase + encodeURIComponent(String(id));
           link.textContent = String(id);
+          link.setAttribute('title', 'Open ID ' + id);
           recentLinks.appendChild(link);
         });
       };
 
-      form.closest('form').addEventListener('submit', function () {
-        const id = input.value.trim();
-        if (!/^\d+$/.test(id)) return;
-        const ids = readRecent().filter(function (recentId) { return String(recentId) !== id; });
-        ids.unshift(id);
-        try { localStorage.setItem(storageKey, JSON.stringify(ids.slice(0, 3))); } catch (e) {}
+      form.addEventListener('submit', function () {
+        rememberId(input.value);
       });
 
-      clearButton.addEventListener('click', function () {
-        try { localStorage.removeItem(storageKey); } catch (e) {}
+      // Also remember a successful lookup already shown on this page.
+      rememberId(input.value);
+
+      clearButton.addEventListener('click', function (e) {
+        e.preventDefault();
+        try { localStorage.removeItem(storageKey); } catch (err) {}
         renderRecent();
       });
 

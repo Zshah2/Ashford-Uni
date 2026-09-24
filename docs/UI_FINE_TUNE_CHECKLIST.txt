@@ -1,4 +1,4 @@
-Northbridge College (CollegeWeb) — UI fine-tune & backlog checklist
+Ashford College (CollegeWeb) — UI fine-tune & backlog checklist
 ====================================================================
 Last updated: 2026-05-28
 Purpose: Track polish, theme, data rules, and grader-demo items before/after each sprint.
@@ -69,7 +69,7 @@ Long-term (optional):
 [x] Register confirm field + submit button match sign-in styling
 [x] Register footer "Sign in" link dual-theme
 [x] Background accent visible in light mode
-[x] Logo image (northbridge_university_icon.svg) in panel header
+[x] Logo image (public/assets/img/logo/) in panel header
 [x] Redirect after login → admin.php (see LOGIN_CREDENTIALS.txt)
 
 Routes (for graders):

@@ -3,13 +3,27 @@
 declare(strict_types=1);
 
 /**
- * School email pattern: first initial + sanitized last name @northbridge.edu
+ * School email pattern: first initial + sanitized last name @ashford.edu
  * (same for students and faculty). When that local part is taken (e.g. same initial + last name),
  * append a single digit (0–9) until unique across users.email and faculty.email.
+ *
+ * Function names keep the historical "northbridge_" prefix for compatibility.
  */
 function northbridge_email_domain(): string
 {
-    return 'northbridge.edu';
+    return 'ashford.edu';
+}
+
+/** True if address is a valid email on the school domain (e.g. name@ashford.edu). */
+function northbridge_email_is_school(string $email): bool
+{
+    $email = strtolower(trim($email));
+    if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return false;
+    }
+    $domain = northbridge_email_domain();
+
+    return str_ends_with($email, '@' . $domain);
 }
 
 function northbridge_email_sanitize_last(string $lastName): string

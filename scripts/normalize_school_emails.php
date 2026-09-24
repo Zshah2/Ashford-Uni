@@ -3,16 +3,16 @@
 declare(strict_types=1);
 
 /**
- * Normalize Northbridge school emails for BOTH students and faculty.
+ * Normalize Ashford school emails for BOTH students and faculty.
  *
  * Fixes cases like:
- * - aalexander900596@northbridge.edu
- * - faculty902522@northbridge.edu
- * - any @northbridge.edu email whose local-part ends with 2+ digits
+ * - aalexander900596@ashford.edu
+ * - faculty902522@ashford.edu
+ * - any @ashford.edu email whose local-part ends with 2+ digits
  *
  * Desired output:
- * - firstInitial + lastName + optional single digit (1–9, then 0) @northbridge.edu
- *   e.g. zshah@northbridge.edu, zshah2@northbridge.edu
+ * - firstInitial + lastName + optional single digit (1–9, then 0) @ashford.edu
+ *   e.g. zshah@ashford.edu, zshah2@ashford.edu
  *
  * Usage:
  *   php scripts/normalize_school_emails.php

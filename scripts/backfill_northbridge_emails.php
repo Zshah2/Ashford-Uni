@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /**
  * Fill missing users.email (students) and faculty.email (faculty) using
- * first initial + last name @northbridge.edu (unique across both tables).
+ * first initial + last name @ashford.edu (unique across both tables).
  *
  * Usage: php scripts/backfill_northbridge_emails.php
  */

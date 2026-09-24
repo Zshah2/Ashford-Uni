@@ -12,7 +12,19 @@ if ($selfName === '') {
 ?>
 <section class="mt-8 <?= htmlspecialchars(ui_card('p-6')) ?>">
   <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Your login</h2>
-  <p class="mt-1 <?= htmlspecialchars(ui_muted()) ?>">Name, email, and password used to sign in.</p>
+  <p class="mt-1 <?= htmlspecialchars(ui_muted()) ?>"><?= auth_is_viewer() ? 'View only. This account cannot change its login.' : 'Name, email, and password used to sign in.' ?></p>
+<?php if (auth_is_viewer()): ?>
+  <dl class="mt-5 max-w-md space-y-3 text-sm">
+    <div>
+      <dt class="<?= htmlspecialchars(ui_label()) ?>">Your name</dt>
+      <dd class="mt-1 text-slate-900 dark:text-white"><?= htmlspecialchars($selfName) ?></dd>
+    </div>
+    <div>
+      <dt class="<?= htmlspecialchars(ui_label()) ?>">Sign-in email</dt>
+      <dd class="mt-1 text-slate-900 dark:text-white"><?= htmlspecialchars($selfEmail) ?></dd>
+    </div>
+  </dl>
+<?php else: ?>
   <form class="mt-5 max-w-md space-y-4" method="post" action="<?= htmlspecialchars(url('/admin.php?view=settings')) ?>">
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>" />
     <input type="hidden" name="action" value="auth_self_creds_save" />
@@ -76,6 +88,7 @@ if ($selfName === '') {
     </div>
     <button type="submit" class="<?= htmlspecialchars(ui_btn_primary()) ?>">Save your login</button>
   </form>
+<?php endif; ?>
 </section>
 
 <?php if ($isAdmin): ?>

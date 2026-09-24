@@ -2,10 +2,10 @@
 
 return [
     'site' => [
-        'name' => 'Northbridge College',
-        'shortName' => 'Northbridge',
+        'name' => 'Ashford College',
+        'shortName' => 'Ashford',
         'tagline' => 'A modern campus for ambitious learners.',
-        'description' => 'Northbridge College offers career-focused programs, supportive faculty, and a vibrant campus community.',
+        'description' => 'Ashford College offers career-focused programs, supportive faculty, and a vibrant campus community.',
         'themeColor' => '#0a0f1f',
     ],
     'registration' => [

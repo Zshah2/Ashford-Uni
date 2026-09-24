@@ -44,7 +44,7 @@ Sign-in is **email + password** unless you enable 2FA. To turn on email OTP late
 | `SMTP_USERNAME` | SMTP user |
 | `SMTP_PASSWORD` | SMTP password / app password |
 | `SMTP_FROM_EMAIL` | `noreply@yourdomain.edu` |
-| `SMTP_FROM_NAME` | `Northbridge College Admin` |
+| `SMTP_FROM_NAME` | `Ashford College Admin` |
 | `OTP_EXPIRY_MINUTES` | `5` (optional) |
 
 Locally you can use `app/config/2fa_config.php` (copy from `2fa_config.php.example`) instead of SMTP env vars.

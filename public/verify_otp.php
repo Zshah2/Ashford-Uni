@@ -89,7 +89,7 @@ if ($isPost && $dbOk) {
 }
 
 $csrf = csrf_token();
-$pageTitle = 'Verify sign-in — Northbridge College';
+$pageTitle = 'Verify sign-in — Ashford College';
 $devOtpPreview = null;
 if (
     isset($_SESSION['dev_otp_preview'], $_SESSION['dev_otp_preview_for'])
@@ -144,13 +144,11 @@ $alertWarnClass = 'mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-
 
     <div class="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/50 dark:border-white/10 dark:bg-slate-900/90 dark:shadow-black/30">
       <div class="text-center">
-        <img
-          src="<?= htmlspecialchars(url('/assets/img/northbridge_university_icon.svg')) ?>"
-          alt="Northbridge College"
-          width="56"
-          height="56"
-          class="mx-auto h-14 w-14 rounded-2xl object-cover ring-1 ring-slate-200 dark:ring-white/15"
-        />
+        <?php
+        $logoClass = 'mx-auto h-14 w-auto max-w-[15rem] object-contain';
+        $logoAlt = 'Ashford College';
+        require view_path('partials/brand_logo.php');
+        ?>
         <h1 class="mt-4 text-2xl font-semibold text-slate-900 dark:text-white">Check your email</h1>
         <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
           We sent a 6-digit code to <span class="font-medium text-slate-700 dark:text-slate-300"><?= htmlspecialchars($maskedEmail) ?></span>.

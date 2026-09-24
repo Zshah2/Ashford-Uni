@@ -1,4 +1,4 @@
-## Northbridge College (CollegeWeb)
+## Ashford College (CollegeWeb)
 
 PHP + MySQL (PDO) + Tailwind. Public site uses the front controller (`public/index.php`); **admins** use **`public/login.php`** and the unified **`public/admin.php`** dashboard.
 
@@ -99,6 +99,6 @@ See **[docs/DEPLOY.md](docs/DEPLOY.md)** for environment variables (`DB_*`, `SMT
 
 ### Project notes
 
-- Department emails in `storage/import/department.csv` use `@northbridge.edu`; re-run `import_all.php` after edits.
+- Department emails in `storage/import/department.csv` use `@ashford.edu`; re-run `import_all.php` after edits.
 - UI polish backlog: [docs/UI_FINE_TUNE_CHECKLIST.txt](docs/UI_FINE_TUNE_CHECKLIST.txt)
 - Grader checklist: [docs/PROFESSOR_TEST_CHECKLIST.md](docs/PROFESSOR_TEST_CHECKLIST.md)

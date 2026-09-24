@@ -24,7 +24,7 @@ try {
 auth_start_session();
 
 if ($dbOk && auth_is_portal_user() && !$isPost) {
-    header('Location: ' . url('/admin.php?view=dashboard'));
+    header('Location: ' . url('/admin.php?view=' . rawurlencode(auth_home_view())));
     exit;
 }
 
@@ -47,7 +47,7 @@ if ($isPost && $dbOk) {
                 $loginError = 'Enter a valid email address.';
             } elseif (($row = auth_verify_portal_credentials($email, $p)) !== null) {
                 auth_establish_portal_session($row);
-                header('Location: ' . url('/admin.php?view=dashboard'));
+                header('Location: ' . url('/admin.php?view=' . rawurlencode(auth_home_view())));
                 exit;
             } else {
                 $loginError = 'Invalid email or password.';
@@ -86,7 +86,7 @@ $initialRegister = $registerError !== null
     || (isset($_GET['view']) && (string)$_GET['view'] === 'register')
     || (isset($_GET['register']) && (string)$_GET['register'] !== '0');
 
-$pageTitle = 'Admin sign in — Northbridge College';
+$pageTitle = 'Admin sign in — Ashford College';
 
 $inputClass = 'mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-400/50 focus:outline-none focus:ring-2 focus:ring-sky-400/20 dark:border-white/10 dark:bg-slate-950/50 dark:text-white dark:placeholder:text-slate-500';
 $alertSuccessClass = 'mt-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100';
@@ -133,14 +133,12 @@ $alertWarnClass = 'mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-
 
     <div id="panelLogin" class="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/50 dark:border-white/10 dark:bg-slate-900/90 dark:shadow-black/30 <?= $initialRegister ? 'hidden' : '' ?>">
       <div class="text-center">
-        <img
-          src="<?= htmlspecialchars(url('/assets/img/northbridge_university_icon.svg')) ?>"
-          alt="Northbridge College"
-          width="56"
-          height="56"
-          class="mx-auto h-14 w-14 rounded-2xl object-cover ring-1 ring-slate-200 dark:ring-white/15"
-        />
-        <h1 class="mt-4 text-2xl font-semibold text-slate-900 dark:text-white">Northbridge College</h1>
+        <?php
+        $logoClass = 'mx-auto h-14 w-auto max-w-[15rem] object-contain';
+        $logoAlt = 'Ashford College';
+        require view_path('partials/brand_logo.php');
+        ?>
+        <h1 class="mt-4 text-2xl font-semibold text-slate-900 dark:text-white">Ashford College</h1>
         <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Admin portal</p>
       </div>
       <?php if ($registered): ?>
@@ -173,14 +171,11 @@ $alertWarnClass = 'mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-
 
     <div id="panelRegister" class="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/50 dark:border-white/10 dark:bg-slate-900/90 dark:shadow-black/30 <?= $initialRegister ? '' : 'hidden' ?>">
       <div class="text-center">
-        <img
-          src="<?= htmlspecialchars(url('/assets/img/northbridge_university_icon.svg')) ?>"
-          alt=""
-          width="48"
-          height="48"
-          class="mx-auto h-12 w-12 rounded-2xl object-cover ring-1 ring-slate-200 dark:ring-white/15"
-          aria-hidden="true"
-        />
+        <?php
+        $logoClass = 'mx-auto h-12 w-auto max-w-[13rem] object-contain';
+        $logoAlt = '';
+        require view_path('partials/brand_logo.php');
+        ?>
         <h2 class="mt-3 text-xl font-semibold text-slate-900 dark:text-white">Create admin account</h2>
         <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Full admin role (seed other roles via scripts).</p>
       </div>

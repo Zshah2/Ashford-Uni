@@ -1,6 +1,6 @@
 {
     "name": "collegeweb/app",
-    "description": "Northbridge College web application",
+    "description": "Ashford College web application",
     "require": {
         "php": ">=8.1",
         "phpmailer/phpmailer": "^6.9"

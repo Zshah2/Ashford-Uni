@@ -17,6 +17,6 @@ return [
     'smtp_username' => 'your-email@example.edu',
     'smtp_password' => 'CHANGE_ME', // Gmail: use App Password
     'from_email' => 'your-email@example.edu',
-    'from_name' => 'Northbridge College Admin',
+    'from_name' => 'Ashford College Admin',
     'otp_expiry_minutes' => 5,
 ];

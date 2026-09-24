@@ -85,7 +85,7 @@ Add new entries at the **top** under the latest date.
 |------|--------|
 | [app/views/pages/admin/login.php](app/views/pages/admin/login.php) | Staff + Admin labels, clearer copy (signup vs `seed_admin.php`, staff tools not student portal), link back to `/`. |
 | [app/views/pages/admin/signup.php](app/views/pages/admin/signup.php) | Same labeling; explains admin account + password rule; link home. |
-| [app/views/partials/seo.php](app/views/partials/seo.php) | Optional `pageTitle` → document title `Page — Northbridge College`. |
+| [app/views/partials/seo.php](app/views/partials/seo.php) | Optional `pageTitle` → document title `Page — Ashford College`. |
 | [app/controllers.php](app/controllers.php) | Pass `pageTitle` for login and signup renders. |
 | [app/lib/csrf.php](app/lib/csrf.php) | CSRF failure returns a small styled HTML page with link to `/login`. |
 
@@ -107,14 +107,16 @@ Add new entries at the **top** under the latest date.
 
 ## 2026-04-22 — Department emails: Northbridge branding
 
+*(Historical note: school domain was later rebranded to `@ashford.edu` / Ashford College.)*
+
 **Goal:** Remove the synthetic `@boolean.edu` domain from demo data so nothing in the repo reads “boolean” for school contact email.
 
 **Changes**
 
 | Area | Detail |
 |------|--------|
-| [storage/import/department.csv](../storage/import/department.csv) | Replaced `@boolean.edu` with `@northbridge.edu` on all department `email` values (local-part unchanged, e.g. `physics@northbridge.edu`). |
-| [README.md](../README.md) | Noted that department emails use `@northbridge.edu` and that `php scripts/import_all.php` should be re-run after editing the CSV so `departments.email` in MySQL stays in sync. |
+| [storage/import/department.csv](../storage/import/department.csv) | Replaced `@boolean.edu` with `@ashford.edu` on all department `email` values (local-part unchanged, e.g. `physics@ashford.edu`). |
+| [README.md](../README.md) | Noted that department emails use `@ashford.edu` and that `php scripts/import_all.php` should be re-run after editing the CSV so `departments.email` in MySQL stays in sync. |
 
 **Verification**
 

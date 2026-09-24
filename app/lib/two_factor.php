@@ -107,18 +107,18 @@ function twofa_send_email(string $email, string $code, string $recipientName = '
 
     $minutes = max(1, (int)($cfg['otp_expiry_minutes'] ?? 5));
     $fromEmail = trim((string)($cfg['from_email'] ?? ''));
-    $fromName = trim((string)($cfg['from_name'] ?? 'Northbridge College'));
+    $fromName = trim((string)($cfg['from_name'] ?? 'Ashford College'));
     if ($fromEmail === '' || !filter_var($fromEmail, FILTER_VALIDATE_EMAIL)) {
         return [false, 'Invalid from_email in 2fa_config.php'];
     }
 
     $greeting = $recipientName !== '' ? 'Hi ' . $recipientName . ',' : 'Hello,';
-    $plain = "{$greeting}\n\nYour Northbridge College sign-in code is:\n\n{$code}\n\nThis code expires in {$minutes} minutes.\n\nIf you did not request this, you can ignore this email.";
+    $plain = "{$greeting}\n\nYour Ashford College sign-in code is:\n\n{$code}\n\nThis code expires in {$minutes} minutes.\n\nIf you did not request this, you can ignore this email.";
     $safeName = htmlspecialchars($recipientName !== '' ? $recipientName : 'there', ENT_QUOTES, 'UTF-8');
     $safeCode = htmlspecialchars($code, ENT_QUOTES, 'UTF-8');
     $html = '<div style="font-family:system-ui,sans-serif;max-width:32rem;color:#0f172a">'
         . '<p style="margin:0 0 1rem">Hi ' . $safeName . ',</p>'
-        . '<p style="margin:0 0 1rem">Your sign-in verification code for <strong>Northbridge College</strong> is:</p>'
+        . '<p style="margin:0 0 1rem">Your sign-in verification code for <strong>Ashford College</strong> is:</p>'
         . '<p style="margin:0 0 1.25rem;font-size:2rem;font-weight:700;letter-spacing:0.35em">' . $safeCode . '</p>'
         . '<p style="margin:0;color:#64748b;font-size:0.875rem">Expires in ' . (int)$minutes . ' minutes. If you did not request this, ignore this email.</p>'
         . '</div>';
@@ -141,7 +141,7 @@ function twofa_send_email(string $email, string $code, string $recipientName = '
         }
         $mail->setFrom($fromEmail, $fromName);
         $mail->addAddress($email);
-        $mail->Subject = 'Your Northbridge College sign-in code';
+        $mail->Subject = 'Your Ashford College sign-in code';
         $mail->isHTML(true);
         $mail->Body = $html;
         $mail->AltBody = $plain;
