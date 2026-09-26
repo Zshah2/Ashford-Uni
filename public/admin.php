@@ -1792,6 +1792,19 @@ try {
     $counts['students'] = (int)$pdo->query('SELECT COUNT(*) FROM students')->fetchColumn();
     $counts['faculty'] = (int)$pdo->query('SELECT COUNT(*) FROM faculty')->fetchColumn();
     $counts['holds_active'] = (int)$pdo->query('SELECT COUNT(*) FROM student_holds WHERE is_active = 1')->fetchColumn();
+    $counts['undergrad'] = (int)$pdo->query('SELECT COUNT(*) FROM undergrad_students')->fetchColumn();
+    $counts['undergrad_ft'] = (int)$pdo->query('SELECT COUNT(*) FROM undergrad_students WHERE student_type LIKE "%Full%"')->fetchColumn();
+    $counts['undergrad_pt'] = (int)$pdo->query('SELECT COUNT(*) FROM undergrad_students WHERE student_type LIKE "%Part%"')->fetchColumn();
+    $counts['grad'] = (int)$pdo->query('SELECT COUNT(DISTINCT student_id) FROM grad_student_programs')->fetchColumn();
+    $counts['faculty_ft'] = (int)$pdo->query('SELECT COUNT(*) FROM faculty WHERE faculty_type LIKE "%Full%"')->fetchColumn();
+    $counts['faculty_pt'] = (int)$pdo->query('SELECT COUNT(*) FROM faculty WHERE faculty_type LIKE "%Part%"')->fetchColumn();
+    foreach (['buildings' => 'buildings', 'rooms' => 'rooms', 'offices' => 'office_rooms', 'semesters' => 'semesters'] as $countKey => $tableName) {
+        try {
+            $counts[$countKey] = (int)$pdo->query('SELECT COUNT(*) FROM `' . $tableName . '`')->fetchColumn();
+        } catch (Throwable) {
+            $counts[$countKey] = 0;
+        }
+    }
 
     // Data-quality signals
     $dash['students_missing_email'] = (int)$pdo->query('
@@ -2492,6 +2505,56 @@ function nav_group_label(string $label): string
             </div>
           </div>
 
+          <div class="mt-6">
+            <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">People</div>
+            <div class="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <a class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-900" href="<?= htmlspecialchars(url('/admin.php?view=people')) ?>">
+                <div class="text-xs font-semibold uppercase text-slate-500">Undergraduates</div>
+                <div class="mt-2 text-3xl font-semibold tabular-nums"><?= (int)($counts['undergrad'] ?? 0) ?></div>
+                <div class="mt-2 text-xs text-slate-500"><?= (int)($counts['undergrad_ft'] ?? 0) ?> full-time · <?= (int)($counts['undergrad_pt'] ?? 0) ?> part-time</div>
+              </a>
+              <a class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-900" href="<?= htmlspecialchars(url('/admin.php?view=people')) ?>">
+                <div class="text-xs font-semibold uppercase text-slate-500">Graduates</div>
+                <div class="mt-2 text-3xl font-semibold tabular-nums"><?= (int)($counts['grad'] ?? 0) ?></div>
+                <div class="mt-2 text-xs text-slate-500">Masters and PhD</div>
+              </a>
+              <a class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-900" href="<?= htmlspecialchars(url('/admin.php?view=people')) ?>">
+                <div class="text-xs font-semibold uppercase text-slate-500">Faculty full-time</div>
+                <div class="mt-2 text-3xl font-semibold tabular-nums"><?= (int)($counts['faculty_ft'] ?? 0) ?></div>
+                <div class="mt-2 text-xs text-slate-500"><?= (int)$counts['faculty'] ?> faculty total</div>
+              </a>
+              <a class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-900" href="<?= htmlspecialchars(url('/admin.php?view=people')) ?>">
+                <div class="text-xs font-semibold uppercase text-slate-500">Faculty part-time</div>
+                <div class="mt-2 text-3xl font-semibold tabular-nums"><?= (int)($counts['faculty_pt'] ?? 0) ?></div>
+                <div class="mt-2 text-xs text-slate-500">Adjunct and part-time load</div>
+              </a>
+            </div>
+          </div>
+
+          <div class="mt-6">
+            <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Campus and catalog</div>
+            <div class="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <a class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-900" href="<?= htmlspecialchars(url('/admin.php?view=departments')) ?>">
+                <div class="text-xs font-semibold uppercase text-slate-500">Departments</div>
+                <div class="mt-2 text-3xl font-semibold tabular-nums"><?= (int)($counts['departments'] ?? 0) ?></div>
+              </a>
+              <a class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-900" href="<?= htmlspecialchars(url('/admin.php?view=catalog')) ?>">
+                <div class="text-xs font-semibold uppercase text-slate-500">Catalog courses</div>
+                <div class="mt-2 text-3xl font-semibold tabular-nums"><?= (int)($counts['courses_catalog'] ?? 0) ?></div>
+              </a>
+              <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                <div class="text-xs font-semibold uppercase text-slate-500">Buildings</div>
+                <div class="mt-2 text-3xl font-semibold tabular-nums"><?= (int)($counts['buildings'] ?? 0) ?></div>
+                <div class="mt-2 text-xs text-slate-500"><?= (int)($counts['rooms'] ?? 0) ?> rooms · <?= (int)($counts['offices'] ?? 0) ?> offices</div>
+              </div>
+              <a class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-900" href="<?= htmlspecialchars(url('/admin.php?view=terms')) ?>">
+                <div class="text-xs font-semibold uppercase text-slate-500">Semesters</div>
+                <div class="mt-2 text-3xl font-semibold tabular-nums"><?= (int)($counts['semesters'] ?? 0) ?></div>
+                <div class="mt-2 text-xs text-slate-500"><?= (int)$counts['holds_active'] ?> active holds</div>
+              </a>
+            </div>
+          </div>
+
           <div id="admin-alerts" class="mt-6 scroll-mt-28 rounded-2xl border border-amber-200 bg-amber-50/90 p-4 shadow-sm dark:border-amber-800 dark:bg-amber-950/40">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div class="text-sm font-semibold text-amber-950 dark:text-amber-100">Alerts &amp; notices</div>
@@ -2707,12 +2770,15 @@ function nav_group_label(string $label): string
               <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                 <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Quick actions</div>
                 <ul class="mt-4 space-y-2 text-sm">
-                  <li><a class="inline-flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-semibold text-slate-900 hover:bg-slate-100" href="<?= htmlspecialchars(url('/admin.php?view=people')) ?>">Add / lookup student <span aria-hidden="true">→</span></a></li>
-                  <li><a class="inline-flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-semibold text-slate-900 hover:bg-slate-100" href="<?= htmlspecialchars(url('/admin.php?view=people')) ?>">Add / lookup faculty <span aria-hidden="true">→</span></a></li>
-                  <li><a class="inline-flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-semibold text-slate-900 hover:bg-slate-100" href="<?= htmlspecialchars(url('/admin.php?view=schedule')) ?>">Create / edit sections <span aria-hidden="true">→</span></a></li>
-                  <li><a class="inline-flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-semibold text-slate-900 hover:bg-slate-100" href="<?= htmlspecialchars(url('/admin.php?view=reports')) ?>">Generate report <span aria-hidden="true">→</span></a></li>
+                  <li><a class="inline-flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-semibold text-slate-900 hover:bg-slate-100" href="<?= htmlspecialchars(url('/admin.php?view=people')) ?>"><?= $isViewer ? 'Look up a student' : 'Students' ?> <span aria-hidden="true">→</span></a></li>
+                  <li><a class="inline-flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-semibold text-slate-900 hover:bg-slate-100" href="<?= htmlspecialchars(url('/admin.php?view=people')) ?>"><?= $isViewer ? 'Look up faculty' : 'Faculty' ?> <span aria-hidden="true">→</span></a></li>
+                  <li><a class="inline-flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-semibold text-slate-900 hover:bg-slate-100" href="<?= htmlspecialchars(url('/admin.php?view=schedule')) ?>"><?= $isViewer ? 'View the schedule' : 'Master schedule' ?> <span aria-hidden="true">→</span></a></li>
+                  <li><a class="inline-flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-semibold text-slate-900 hover:bg-slate-100" href="<?= htmlspecialchars(url('/admin.php?view=departments')) ?>">Departments <span aria-hidden="true">→</span></a></li>
+                  <?php if ($canPostGrades): ?>
+                    <li><a class="inline-flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-semibold text-slate-900 hover:bg-slate-100" href="<?= htmlspecialchars(url('/admin.php?view=people')) ?>">Enter a grade <span aria-hidden="true">→</span></a></li>
+                  <?php endif; ?>
                 </ul>
-                <p class="mt-4 text-xs leading-relaxed text-slate-500">People records usually come from registrar import; use lookup after IDs exist.</p>
+                <p class="mt-4 text-xs leading-relaxed text-slate-500"><?= $isViewer ? 'This login can open records and cannot save changes.' : 'Signed in as ' . htmlspecialchars($user) . '. Use lookup when you already have an ID.' ?></p>
               </div>
             </div>
           </div>
