@@ -112,7 +112,7 @@ function app_base_path(): string
     if (str_ends_with($script, '/index.php')) {
         $base = substr($script, 0, -strlen('/index.php'));
     } else {
-        $base = dirname($script);
+        $base = str_replace('\\', '/', dirname($script));;
     }
 
     $base = rtrim($base, '/');

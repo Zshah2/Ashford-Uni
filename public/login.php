@@ -149,7 +149,7 @@ $alertWarnClass = 'mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-
       <?php if ($loginError): ?>
         <div class="<?= htmlspecialchars($alertErrorClass) ?>"><?= htmlspecialchars($loginError) ?></div>
       <?php endif; ?>
-      <form class="mt-6 space-y-4" method="post" action="<?= htmlspecialchars(url('/login.php')) ?>" autocomplete="on">
+            <form class="mt-6 space-y-4" method="post" action="/login.php" autocomplete="on">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>" />
         <input type="hidden" name="intent" value="login" />
         <div>
