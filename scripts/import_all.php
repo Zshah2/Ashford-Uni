@@ -156,11 +156,11 @@ function import_faculty(PDO $pdo, string $path): void
 {
     $rows = csv_rows($path);
     $stmt = $pdo->prepare('
-      INSERT INTO faculty (faculty_id, office_number, rank, faculty_type, email, phone_number)
+      INSERT INTO faculty (faculty_id, office_number, `rank`, faculty_type, email, phone_number)
       VALUES (:faculty_id, :office_number, :rank, :faculty_type, :email, :phone_number)
       ON DUPLICATE KEY UPDATE
         office_number=VALUES(office_number),
-        rank=VALUES(rank),
+        `rank`=VALUES(`rank`),
         faculty_type=VALUES(faculty_type),
         email=VALUES(email),
         phone_number=VALUES(phone_number)
