@@ -27,7 +27,7 @@
         <div class="mt-6 space-y-2 text-sm text-slate-600 dark:text-slate-300">
           <div><span class="text-slate-400">Email:</span> admissions@northbridge.test</div>
           <div><span class="text-slate-400">Phone:</span> (555) 010-2030</div>
-          <div><span class="text-slate-400">Address:</span> 100 Campus Way, Northbridge</div>
+          <div><span class="text-slate-400">Address:</span> 100 Campus Way, Ashford</div>
         </div>
       </div>
 

@@ -225,7 +225,7 @@
         <div class="nb-home-accent text-sm font-semibold text-violet-700 dark:text-fuchsia-300">About</div>
         <h2 class="nb-home-heading mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-3xl">Built for serious learners</h2>
         <p class="nb-home-body mt-3 text-sm text-slate-600 dark:text-slate-300">
-          Northbridge blends rigorous academics with practical experience—small classes, modern labs, and advisors who know your name.
+          Ashford blends rigorous academics with practical experience—small classes, modern labs, and advisors who know your name.
         </p>
         <div class="mt-6 grid gap-3 sm:grid-cols-2">
           <div class="nb-home-card rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-fuchsia-500/25 dark:bg-fuchsia-950/20">
@@ -242,7 +242,7 @@
         <div class="overflow-hidden rounded-3xl border border-fuchsia-500/30 bg-gradient-to-br from-violet-950/40 to-fuchsia-950/20">
           <img
             src="<?= htmlspecialchars(url('/assets/img/library.jpg')) ?>"
-            alt="Northbridge library"
+            alt="Ashford library"
             class="h-56 w-full object-cover sm:h-64"
             loading="lazy"
             decoding="async"
@@ -306,7 +306,7 @@
       <div>
         <div class="nb-home-accent text-sm font-semibold text-amber-700 dark:text-amber-300">Events</div>
         <h2 class="nb-home-heading mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-3xl">On campus &amp; online</h2>
-        <p class="nb-home-body mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-300">A few upcoming moments to explore Northbridge.</p>
+        <p class="nb-home-body mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-300">A few upcoming moments to explore Ashford.</p>
       </div>
       <a href="#visit" class="text-sm font-semibold text-indigo-600 hover:text-indigo-900 dark:text-slate-200 dark:hover:text-white">Plan a visit →</a>
     </div>
