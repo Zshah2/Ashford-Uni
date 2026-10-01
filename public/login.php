@@ -86,12 +86,12 @@ $initialRegister = $registerError !== null
     || (isset($_GET['view']) && (string)$_GET['view'] === 'register')
     || (isset($_GET['register']) && (string)$_GET['register'] !== '0');
 
-$pageTitle = 'Admin sign in — Northbridge College';
+$pageTitle = 'Admin sign in — Ashford University';
 
 $inputClass = 'mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-400/50 focus:outline-none focus:ring-2 focus:ring-sky-400/20 dark:border-white/10 dark:bg-slate-950/50 dark:text-white dark:placeholder:text-slate-500';
 $alertSuccessClass = 'mt-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100';
 $alertErrorClass = 'mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-100';
-$alertWarnClass = 'mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100';
+$alertWarnClass = 'mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-50₀/3₀ dark:bg-amber-5₀₀/₁₀ dark:text-amber-1₀₀';
 ?>
 <!DOCTYPE html>
 <html lang="en" class="h-full">
@@ -134,13 +134,13 @@ $alertWarnClass = 'mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-
     <div id="panelLogin" class="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/50 dark:border-white/10 dark:bg-slate-900/90 dark:shadow-black/30 <?= $initialRegister ? 'hidden' : '' ?>">
       <div class="text-center">
         <img
-          src="<?= htmlspecialchars(url('/assets/img/northbridge_university_icon.svg')) ?>"
-          alt="Northbridge College"
+          src="<?= htmlspecialchars(url('/assets/img/ashford_university_icon.svg')) ?>"
+          alt="Ashford University"
           width="56"
           height="56"
           class="mx-auto h-14 w-14 rounded-2xl object-cover ring-1 ring-slate-200 dark:ring-white/15"
         />
-        <h1 class="mt-4 text-2xl font-semibold text-slate-900 dark:text-white">Northbridge College</h1>
+        <h1 class="mt-4 text-2xl font-semibold text-slate-900 dark:text-white">Ashford University</h1>
         <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Admin portal</p>
       </div>
       <?php if ($registered): ?>
@@ -174,7 +174,7 @@ $alertWarnClass = 'mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-
     <div id="panelRegister" class="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/50 dark:border-white/10 dark:bg-slate-900/90 dark:shadow-black/30 <?= $initialRegister ? '' : 'hidden' ?>">
       <div class="text-center">
         <img
-          src="<?= htmlspecialchars(url('/assets/img/northbridge_university_icon.svg')) ?>"
+          src="<?= htmlspecialchars(url('/assets/img/ashford_university_icon.svg')) ?>"
           alt=""
           width="48"
           height="48"

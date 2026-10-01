@@ -5,7 +5,7 @@
   <div class="relative min-h-[72vh]">
     <img
       src="<?= htmlspecialchars(url('/assets/img/campus-hero.jpg')) ?>"
-      alt="Northbridge campus"
+      alt="Ashford campus"
       class="absolute inset-0 h-full w-full object-cover"
       loading="eager"
       decoding="async"
@@ -14,9 +14,9 @@
     <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_60%_at_50%_-10%,rgba(232,121,249,0.22),transparent_55%)]"></div>
 
     <div class="relative mx-auto flex min-h-[72vh] max-w-6xl flex-col items-center justify-center px-4 py-16 text-center sm:px-6">
-      <p class="text-xs font-semibold tracking-[0.22em] text-indigo-700 dark:text-cyan-300">NORTHBRIDGE UNIVERSITY</p>
+      <p class="text-xs font-semibold tracking-[0.22em] text-indigo-700 dark:text-cyan-300">ASHFORD UNIVERSITY</p>
       <h1 class="mt-4 bg-gradient-to-r from-indigo-950 via-violet-800 to-fuchsia-700 bg-clip-text font-serif text-6xl font-semibold tracking-tight text-transparent dark:from-white dark:via-cyan-100 dark:to-fuchsia-200 sm:text-7xl">
-        Northbridge
+        Ashford
       </h1>
       <p class="mt-5 max-w-2xl text-base text-slate-700 dark:text-slate-200 sm:text-lg">
         <?= htmlspecialchars($app['site']['description']) ?>
@@ -33,7 +33,7 @@
   </div>
 
   <a href="#explore" class="flex items-center justify-center gap-2 border-t border-fuchsia-500/30 bg-gradient-to-r from-violet-600 via-fuchsia-500 to-amber-400 px-4 py-4 text-sm font-semibold text-white shadow-inner shadow-black/20 transition hover:brightness-110">
-    Explore Northbridge
+    Explore Ashford
     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
@@ -47,7 +47,7 @@
         <div class="nb-home-accent text-sm font-semibold text-indigo-600 dark:text-cyan-300">Campus life</div>
         <h2 class="nb-home-heading mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-3xl">A place to belong—and grow</h2>
         <p class="nb-home-body mt-3 text-sm text-slate-600 dark:text-slate-300">
-          From hands-on labs to student clubs and career coaching, Northbridge is built around support and momentum.
+          From hands-on labs to student clubs and career coaching, Ashford is built around support and momentum.
         </p>
         <div class="mt-6 grid gap-3 sm:grid-cols-2">
           <div class="nb-home-card rounded-3xl border border-slate-200 bg-white p-5 transition hover:border-indigo-300 dark:border-fuchsia-500/25 dark:bg-gradient-to-br dark:from-fuchsia-950/35 dark:to-violet-950/20 dark:hover:border-cyan-400/35">
@@ -91,7 +91,7 @@
             <div class="mt-5 grid gap-3 sm:grid-cols-2">
               <div class="nb-home-stat rounded-3xl border border-indigo-200 bg-indigo-50 p-4 dark:border-cyan-500/25 dark:bg-black/25">
                 <div class="nb-home-stat-label text-xs font-semibold uppercase tracking-wide text-violet-700 dark:text-cyan-300/80">Where</div>
-                <div class="nb-home-stat-value mt-1 text-base font-semibold text-slate-900 dark:text-white">Northbridge Campus</div>
+                <div class="nb-home-stat-value mt-1 text-base font-semibold text-slate-900 dark:text-white">Ashford Campus</div>
                 <div class="nb-home-body mt-1 text-sm text-slate-600 dark:text-slate-300">Student center check-in</div>
               </div>
               <div class="nb-home-stat rounded-3xl border border-indigo-200 bg-indigo-50 p-4 dark:border-cyan-500/25 dark:bg-black/25">
