@@ -17,6 +17,9 @@ $adminNavGroup = static function (string $label): string {
 };
 ?>
 <nav class="space-y-1 text-sm">
+  <?php if (!empty($isStat)): ?>
+    <?= $adminNavItem(url('/admin.php?view=stats'), 'Department statistics', $view === 'stats') ?>
+  <?php else: ?>
   <?= $adminNavItem(url('/admin.php?view=dashboard'), 'Dashboard', $view === 'dashboard') ?>
   <?= $adminNavGroup('People & directory') ?>
   <?= $adminNavItem(url('/admin.php?view=people'), 'People', $view === 'people') ?>
@@ -41,4 +44,5 @@ $adminNavGroup = static function (string $label): string {
   <?= $adminNavItem(url('/admin.php?view=reports'), 'Reports & Analytics', $view === 'reports') ?>
   <?= $adminNavItem(url('/admin.php?view=messages'), 'Messages', $view === 'messages') ?>
   <?= $adminNavItem(url('/admin.php?view=settings'), 'Settings', $view === 'settings') ?>
+  <?php endif; ?>
 </nav>

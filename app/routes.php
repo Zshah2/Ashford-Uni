@@ -7,6 +7,10 @@
 return [
     ['GET', '/', 'home'],
     ['GET', '/health', 'health'],
+    ['GET', '/calendar', 'public_calendar'],
+    ['GET', '/schedule/fall-2026', 'public_fall_schedule'],
+    ['GET', '/schedule/spring-2027', 'public_spring_schedule'],
+    ['GET', '/catalog', 'public_catalog'],
 
     ['GET', '/login', 'admin_login_form'],
     ['POST', '/login', 'admin_login_submit'],

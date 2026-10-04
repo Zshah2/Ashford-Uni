@@ -64,6 +64,15 @@ function admin_course_offerings_state(PDO $pdo, array $get): array
     }
 
     $q = trim((string)($get['q'] ?? ''));
+    $searchIdError = null;
+    if ($q !== '' && ctype_digit($q) && strlen($q) === 7) {
+        require_once __DIR__ . '/people_validate.php';
+        try {
+            $searchIdError = people_id_lookup_error($pdo, $q);
+        } catch (Throwable) {
+            $searchIdError = 'Enter a valid student or faculty ID.';
+        }
+    }
     $crn = trim((string)($get['crn'] ?? ''));
     if ($crn !== '' && !ctype_digit($crn)) {
         $crn = '';
@@ -80,7 +89,10 @@ function admin_course_offerings_state(PDO $pdo, array $get): array
     $rows = [];
     $total = 0;
 
-    if ($termId !== null) {
+    if ($searchIdError !== null) {
+        $rows = [];
+        $total = 0;
+    } elseif ($termId !== null) {
         $where = ['s.term_id = ?'];
         $bind = [$termId];
         if ($deptFilter !== '') {
@@ -254,6 +266,7 @@ function admin_course_offerings_state(PDO $pdo, array $get): array
         'crn' => $crn,
         'faculty_id' => $facultyId,
         'q' => $q,
+        'search_id_error' => $searchIdError,
         'course_sections' => $rows,
         'course_sections_total' => $total,
         'page' => $page,

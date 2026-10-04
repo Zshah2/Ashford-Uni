@@ -34,6 +34,76 @@ function handler_home(array $params): void
     render('pages/home.php', ['app' => $app]);
 }
 
+function public_term_schedule(string $code, string $title): void
+{
+    global $app;
+    $pdo = db();
+    $stmt = $pdo->prepare('
+      SELECT c.course_id, c.course_name, s.meeting_days, s.meeting_time, s.room, s.capacity,
+        TRIM(CONCAT(COALESCE(u.first_name, ""), " ", COALESCE(u.last_name, ""))) AS instructor
+      FROM sections s
+      INNER JOIN courses c ON c.course_id = s.course_id
+      INNER JOIN terms t ON t.term_id = s.term_id
+      LEFT JOIN users u ON u.user_id = s.faculty_id
+      WHERE t.code = ?
+      ORDER BY c.course_id, s.meeting_days, s.meeting_time, s.section_id
+    ');
+    $stmt->execute([$code]);
+    render('pages/public_schedule.php', [
+        'app' => $app,
+        'pageTitle' => $title,
+        'termName' => $title,
+        'rows' => $stmt->fetchAll(PDO::FETCH_ASSOC),
+    ]);
+}
+
+function handler_public_calendar(array $params): void
+{
+    global $app;
+    $events = db()->query('
+      SELECT c.event_name, c.start_date, c.end_date, c.notes, t.name AS term_name
+      FROM academic_calendar c
+      LEFT JOIN terms t ON t.term_id = c.term_id
+      ORDER BY c.start_date, c.calendar_id
+    ')->fetchAll(PDO::FETCH_ASSOC);
+    render('pages/public_calendar.php', [
+        'app' => $app,
+        'pageTitle' => 'Academic calendar',
+        'events' => $events,
+    ]);
+}
+
+function handler_public_fall_schedule(array $params): void
+{
+    public_term_schedule('fall2026', 'Fall 2026');
+}
+
+function handler_public_spring_schedule(array $params): void
+{
+    public_term_schedule('spring2027', 'Spring 2027');
+}
+
+function handler_public_catalog(array $params): void
+{
+    global $app;
+    $courses = db()->query('
+      SELECT c.course_id, c.course_name, c.credits, c.description, d.dept_name,
+        (
+          SELECT GROUP_CONCAT(p.prereq_course_id ORDER BY p.prereq_course_id SEPARATOR ", ")
+          FROM course_prereqs p
+          WHERE p.course_id = c.course_id
+        ) AS prereqs
+      FROM courses c
+      LEFT JOIN departments d ON d.dept_id = c.dept_id
+      ORDER BY c.course_id
+    ')->fetchAll(PDO::FETCH_ASSOC);
+    render('pages/public_catalog.php', [
+        'app' => $app,
+        'pageTitle' => 'University catalog',
+        'courses' => $courses,
+    ]);
+}
+
 function handler_health(array $params): void
 {
     header('Content-Type: application/json; charset=utf-8');

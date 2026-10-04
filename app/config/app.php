@@ -13,13 +13,10 @@ return [
         'default_max_credits' => 18,
     ],
     'nav' => [
-        ['label' => 'Academics', 'href' => '#programs'],
-        ['label' => 'Research', 'href' => '#departments'],
-        ['label' => 'Campus Life', 'href' => '#visit'],
-        ['label' => 'Admissions', 'href' => '#admissions'],
-        ['label' => 'About', 'href' => '#about'],
-        ['label' => 'News', 'href' => '#news'],
-        ['label' => 'Events', 'href' => '#events'],
+        ['label' => 'Calendar', 'href' => '/calendar'],
+        ['label' => 'Fall 2026', 'href' => '/schedule/fall-2026'],
+        ['label' => 'Spring 2027', 'href' => '/schedule/spring-2027'],
+        ['label' => 'Catalog', 'href' => '/catalog'],
     ],
     'cta' => [
         'primary' => ['label' => 'Apply Now', 'href' => '#admissions'],

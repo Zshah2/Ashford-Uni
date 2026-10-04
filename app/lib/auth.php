@@ -7,15 +7,25 @@ declare(strict_types=1);
  * - admin: full access — registration add/drop, holds, future grade writes.
  * - limited: registration + holds; cannot perform blocked write actions (e.g. grade import).
  * - viewer: read-only — no mutations via admin.php or legacy /admin/holds/* POST routes.
+ * - stat: full-time department statistics. Aggregate views only, plus that employee's own record.
  */
 
 require_once __DIR__ . '/url.php';
+require_once __DIR__ . '/env.php';
 
 function auth_start_session(): void
 {
-    if (session_status() !== PHP_SESSION_ACTIVE) {
-        session_start();
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        return;
     }
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'secure' => app_request_is_https(),
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+    session_start();
 }
 
 function auth_role(): ?string
@@ -45,11 +55,19 @@ function auth_home_view(): string
 {
     auth_start_session();
     $username = $_SESSION['auth']['username'] ?? '';
+    if (auth_role() === 'stat') {
+        return 'stats';
+    }
     if (in_array($username, ['sraza9', 'wbhatti1', 'asewell3'], true)) {
         return 'team';
     }
 
     return 'dashboard';
+}
+
+function auth_is_stat(): bool
+{
+    return auth_role() === 'stat';
 }
 
 function auth_is_limited(): bool
@@ -71,7 +89,7 @@ function auth_is_portal_user(): bool
     }
     $r = auth_role();
 
-    return $r === 'admin' || $r === 'limited' || $r === 'viewer';
+    return $r === 'admin' || $r === 'limited' || $r === 'viewer' || $r === 'stat';
 }
 
 function auth_has_pending_2fa(): bool
@@ -126,6 +144,7 @@ function auth_map_user_row(array $row): array
         'email' => $email !== '' ? auth_normalize_email($email) : null,
         'password_hash' => (string)$row['password_hash'],
         'is_active' => (int)($row['is_active'] ?? 1),
+        'person_id' => isset($row['person_id']) ? (int)$row['person_id'] : 0,
     ];
 }
 
@@ -163,7 +182,7 @@ function auth_fetch_user_by_email(string $email): ?array
     $pdo = db();
     try {
         $stmt = $pdo->prepare('
-          SELECT id, username, display_name, email, password_hash, role, IFNULL(is_active, 1) AS is_active
+          SELECT id, username, display_name, email, password_hash, role, IFNULL(is_active, 1) AS is_active, person_id
           FROM auth_users WHERE LOWER(TRIM(email)) = ? LIMIT 1
         ');
         $stmt->execute([$email]);
@@ -359,7 +378,7 @@ function auth_verify_portal_credentials(string $email, string $password): ?array
         return null;
     }
     $role = $row['role'];
-    if ($role !== 'admin' && $role !== 'limited' && $role !== 'viewer') {
+    if ($role !== 'admin' && $role !== 'limited' && $role !== 'viewer' && $role !== 'stat') {
         return null;
     }
 
@@ -369,6 +388,7 @@ function auth_verify_portal_credentials(string $email, string $password): ?array
         'display_name' => $row['display_name'] ?? auth_resolve_display_name($row),
         'role' => $role,
         'email' => $row['email'],
+        'person_id' => (int)($row['person_id'] ?? 0),
     ];
 }
 
@@ -404,6 +424,7 @@ function auth_establish_portal_session(array $row): void
         'username' => (string)$row['username'],
         'display_name' => auth_resolve_display_name($row),
         'role' => (string)$row['role'],
+        'person_id' => (int)($row['person_id'] ?? 0),
     ];
 }
 
@@ -471,6 +492,7 @@ function auth_login(string $email, string $password): bool
         'username' => $row['username'],
         'display_name' => auth_resolve_display_name($row),
         'role' => $row['role'],
+        'person_id' => (int)($row['person_id'] ?? 0),
     ];
 
     return true;
@@ -523,7 +545,7 @@ function auth_create_user_with_role(string $email, string $password, string $rol
     if (strlen($password) < 8) {
         return [false, 'Password must be at least 8 characters.'];
     }
-    if (!in_array($role, ['admin', 'limited', 'viewer'], true)) {
+    if (!in_array($role, ['admin', 'limited', 'viewer', 'stat'], true)) {
         return [false, 'Invalid role.'];
     }
 

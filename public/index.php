@@ -81,6 +81,10 @@ function route_match(array $route, string $method, string $path): bool
 $handlerMap = [
     'home' => 'handler_home',
     'health' => 'handler_health',
+    'public_calendar' => 'handler_public_calendar',
+    'public_fall_schedule' => 'handler_public_fall_schedule',
+    'public_spring_schedule' => 'handler_public_spring_schedule',
+    'public_catalog' => 'handler_public_catalog',
     'admin_login_form' => 'handler_admin_login_form',
     'admin_login_submit' => 'handler_admin_login_submit',
     'admin_signup_form' => 'handler_admin_signup_form',

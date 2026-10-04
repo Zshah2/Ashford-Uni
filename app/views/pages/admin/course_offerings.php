@@ -173,7 +173,11 @@ $courseDetailHref = static function (string $courseId, ?int $sectionId = null) u
     </div>
     <div class="min-w-0">
       <label class="<?= htmlspecialchars(ui_label()) ?>" for="co-q">Search courses</label>
-      <input id="co-q" name="q" value="<?= htmlspecialchars($q) ?>" class="<?= htmlspecialchars(ui_input()) ?> w-full" placeholder="Course ID, title, instructor, section ID, room…" />
+      <?php $search_id_error = $search_id_error ?? null; ?>
+      <input id="co-q" name="q" value="<?= htmlspecialchars($q) ?>" class="<?= htmlspecialchars(ui_input()) ?> w-full <?= $search_id_error !== null ? 'border-rose-300' : '' ?>" placeholder="Course ID, title, instructor, section ID, room…" aria-invalid="<?= $search_id_error !== null ? 'true' : 'false' ?>" <?= $search_id_error !== null ? 'aria-describedby="co-id-error"' : '' ?> />
+      <?php if ($search_id_error !== null): ?>
+        <div id="co-id-error" class="mt-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-950" role="alert"><?= htmlspecialchars((string)$search_id_error) ?></div>
+      <?php endif; ?>
     </div>
     <div class="flex flex-wrap items-end gap-3 border-t border-slate-200 pt-4 dark:border-slate-700">
       <div class="w-full sm:w-40">
@@ -335,10 +339,12 @@ $courseDetailHref = static function (string $courseId, ?int $sectionId = null) u
         <?php elseif ($course_sections === []): ?>
           <tr>
             <td class="px-4 py-6 <?= htmlspecialchars(ui_muted()) ?>" colspan="<?= !empty($isAdmin) ? 9 : 8 ?>">
+              <?php if (($search_id_error ?? null) === null): ?>
               No sections match these filters.
               <?php if (!empty($isAdmin)): ?>
                 <a class="<?= htmlspecialchars(ui_link()) ?>" href="<?= htmlspecialchars(url('/admin.php?view=catalog')) ?>">Add a catalog course</a>
                 or open Add new section above.
+              <?php endif; ?>
               <?php endif; ?>
             </td>
           </tr>

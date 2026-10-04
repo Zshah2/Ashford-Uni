@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/env.php';
+
 /**
  * Shared PDO connection (login, admin, scripts, etc.).
  * Cloud (DO/AWS/VPS): DB_* or MYSQL_* env vars (see docs/DEPLOY.md).
@@ -10,12 +12,7 @@ declare(strict_types=1);
 
 function db_env(string $key): ?string
 {
-    $v = getenv($key);
-    if ($v === false || $v === '') {
-        return null;
-    }
-
-    return (string)$v;
+    return app_env($key);
 }
 
 /**
@@ -85,11 +82,7 @@ function db(): PDO
             $fromEnv['port'],
             $fromEnv['database']
         );
-        $pdo = new PDO($dsn, $fromEnv['username'], $fromEnv['password'], [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES => true,
-        ]);
+        $pdo = new PDO($dsn, $fromEnv['username'], $fromEnv['password'], db_pdo_options());
 
         return $pdo;
     }
@@ -110,11 +103,31 @@ function db(): PDO
         $cfg['charset'] ?? 'utf8mb4'
     );
 
-    $pdo = new PDO($dsn, (string)$cfg['username'], (string)$cfg['password'], [
+    $pdo = new PDO($dsn, (string)$cfg['username'], (string)$cfg['password'], db_pdo_options());
+
+    return $pdo;
+}
+
+/**
+ * Same driver options locally and on AWS.
+ * Set DB_SSL_CA to the RDS CA bundle path when the database requires TLS.
+ *
+ * @return array<int|string, mixed>
+ */
+function db_pdo_options(): array
+{
+    $options = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES => false,
-    ]);
+    ];
+    $ca = db_env('DB_SSL_CA') ?? db_env('MYSQL_ATTR_SSL_CA');
+    if ($ca !== null && is_file($ca)) {
+        $options[PDO::MYSQL_ATTR_SSL_CA] = $ca;
+        if (!app_env_flag('DB_SSL_VERIFY')) {
+            $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+        }
+    }
 
-    return $pdo;
+    return $options;
 }

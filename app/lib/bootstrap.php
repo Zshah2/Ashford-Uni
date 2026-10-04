@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 function app_debug(): bool
 {
-    $v = getenv('APP_DEBUG');
-    if ($v === false || $v === '') {
-        return false;
+    if (!function_exists('app_env_flag')) {
+        require_once __DIR__ . '/env.php';
     }
 
-    return $v === '1' || strtolower((string)$v) === 'true' || strtolower((string)$v) === 'on';
+    return app_env_flag('APP_DEBUG');
 }
 
 function bootstrap_app(): void

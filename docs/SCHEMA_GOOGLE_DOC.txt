@@ -1,0 +1,329 @@
+Ashford College
+Student Information System — Database Schema
+
+Paste this into a Google Doc. Each block is one table.
+Primary key is listed first. An arrow means a foreign key.
+
+
+What this database stores
+People, departments, majors and minors, the course catalog, class sections, registration, grades, holds, campus rooms, and the academic calendar.
+
+
+Design rules
+The schema is in third normal form. A fact is stored in one place. A department name lives on departments, not on every student. A course name lives on courses, not on every enrollment. A student registers for a section, and the section points at the course.
+
+Student IDs are 7-digit numbers from 1000000 to 1999999.
+Faculty IDs are 7-digit numbers from 9000000 to 9999999.
+
+A student has at most one major and at most one minor.
+Undergraduate class years are Freshman, Sophomore, Junior, and Senior.
+Undergraduate load is Fulltime or Parttime.
+Graduate programs are Master's and PhD.
+
+A course can have no prerequisites, one prerequisite, or more than one. Each prerequisite is its own row in course_prereqs.
+
+Counts the schema is built to hold
+Undergraduates: 1,200
+  300 freshmen, 300 sophomores, 300 juniors, 300 seniors
+  200 full-time and 100 part-time in each class year (800 full-time, 400 part-time)
+Graduates: 300
+  250 Master's and 50 PhD
+Faculty: 400
+  300 full-time and 100 part-time
+Students in total: 1,500
+
+
+PEOPLE
+
+users
+Primary key: user_id
+Columns: user_id, first_name, middle_name, last_name, apt_no, street, city, state, zip_code, email, phone_number, gender, dob, user_type
+user_type is Student or Faculty. This is the one person record. Students and faculty do not copy the name and address onto their own tables.
+
+students
+Primary key: student_id
+student_id → users(user_id)
+major_id → majors(major_id)
+minor_id → minors(minor_id)
+Columns: student_id, major_id, minor_id
+major_id and minor_id may be empty. An undeclared student has neither.
+
+undergrad_students
+Primary key: student_id
+student_id → students(student_id)
+Columns: student_id, student_type, academic_year_level, enrollment_intensity
+student_type is Fulltime or Parttime.
+academic_year_level is Freshman, Sophomore, Junior, or Senior.
+
+ug_credit_limits
+Primary key: student_id
+student_id → students(student_id)
+Columns: student_id, student_type, year, max_credit, min_credit, total_credit_earned
+One row per undergraduate. It stores how many credits that student may take and how many they have earned.
+
+programs
+Primary key: program_id
+dept_id → departments(dept_id)
+Columns: program_id, name, level, dept_id
+level is UG or GRAD. Graduate program names in use are Master's and PhD.
+
+grad_student_programs
+Primary key: (student_id, program_id)
+student_id → students(student_id)
+program_id → programs(program_id)
+Columns: student_id, program_id, year, thesis_year, total_credit_earned
+A graduate student is in one program. The pair of student and program is unique.
+
+faculty
+Primary key: faculty_id
+faculty_id → users(user_id)
+dept_id → departments(dept_id)
+Columns: faculty_id, office_number, rank, faculty_type, dept_id, email, phone_number, hire_date
+dept_id is the faculty member's primary department.
+faculty_type is full-time or part-time.
+
+faculty_departments
+Primary key: (faculty_id, dept_id)
+faculty_id → faculty(faculty_id)
+dept_id → departments(dept_id)
+Columns: faculty_id, dept_id, percent_time, date_of_appointment
+A faculty member can be appointed to more than one department. percent_time is that appointment's share. This is a separate table so the appointment is not repeated inside faculty.
+
+
+DEPARTMENTS, MAJORS, AND MINORS
+
+departments
+Primary key: dept_id
+chair_id → users(user_id)
+building_room_id → rooms(room_id)
+Columns: dept_id, dept_name, room_number, building_number, building_room_id, chair_id, email, phone_number, dept_assistant
+dept_id is a short code such as BIO or COM. The chair is a person in users. The office is a room.
+
+majors
+Primary key: major_id
+dept_id → departments(dept_id)
+Unique: major_name
+Columns: major_id, major_name, dept_id
+A department can offer more than one major. COM offers Computer Science and Management Information Systems. The major name is stored here, not on the student row.
+
+minors
+Primary key: minor_id
+dept_id → departments(dept_id)
+Unique: minor_name
+Columns: minor_id, minor_name, dept_id
+
+student_departments
+Primary key: (student_id, dept_id)
+student_id → students(student_id)
+dept_id → departments(dept_id)
+Columns: student_id, dept_id, declaration_role, date_of_declaration
+declaration_role is major or minor.
+A student can have one major declaration and one minor declaration. Two generated columns, major_student_id and minor_student_id, are unique so a second major or a second minor cannot be inserted.
+
+advisors
+Primary key: (faculty_id, student_id)
+faculty_id → faculty(faculty_id)
+student_id → students(student_id)
+Columns: faculty_id, student_id
+One faculty member advises many students. One student has one advisor in this table. The advisor is not stored on the student row, because the link is its own fact.
+
+
+CATALOG
+
+courses
+Primary key: course_id
+dept_id → departments(dept_id)
+Columns: course_id, course_name, description, credits, dept_id, is_active
+course_id is the catalog code, such as BIO101.
+
+course_prereqs
+Primary key: (course_id, prereq_course_id)
+course_id → courses(course_id)
+prereq_course_id → courses(course_id)
+Columns: course_id, prereq_course_id
+Each row is one prerequisite. A course with no rows here has no prerequisites. A course with two rows has two prerequisites.
+
+degree_requirements
+Primary key: requirement_id
+major_id → majors(major_id)
+minor_id → minors(minor_id)
+course_id → courses(course_id)
+Unique: (major_id, course_id)
+Columns: requirement_id, major_id, minor_id, course_id
+A required course for a major or a minor. The same course is not listed twice for the same major.
+
+degree_requirement_courses
+Primary key: (dept_id, course_id, requirement_kind)
+dept_id → departments(dept_id)
+course_id → courses(course_id)
+Columns: dept_id, course_id, requirement_kind
+requirement_kind is major, minor, or both. This is the department-level list of courses that count toward a major or a minor.
+
+
+SCHEDULE AND REGISTRATION
+
+terms
+Primary key: term_id
+Unique: code
+Columns: term_id, code, name, start_date, end_date, registration_open, registration_start, registration_end
+code is the short name, such as FA26, WI27, or SP27.
+
+semesters
+Primary key: semester_id
+Unique: (semester_name, semester_year)
+Columns: semester_id, semester_name, semester_year, start_date, end_date
+semester_name is Fall, Winter, or Spring.
+
+sections
+Primary key: section_id
+course_id → courses(course_id)
+term_id → terms(term_id)
+faculty_id → faculty(faculty_id)
+Columns: section_id, course_id, term_id, faculty_id, meeting_days, meeting_time, room, capacity
+This is one offering of a course in a term. meeting_days is the pattern, such as MWF or TR. meeting_time is the clock time. room is the room code. capacity is the seat limit. The instructor may be empty.
+
+enrollments
+Primary key: enrollment_id
+Unique: (student_id, section_id)
+student_id → students(student_id)
+section_id → sections(section_id)
+Columns: enrollment_id, student_id, section_id, status, created_at
+status is enrolled, waitlisted, or dropped.
+A student cannot have two rows for the same section. The grade is not stored here. The grade is on student_course_results, so dropping a section does not erase the course catalog or the grade history.
+
+student_course_results
+Primary key: result_id
+Unique: (student_id, course_id, term_id)
+student_id → students(student_id)
+course_id → courses(course_id)
+term_id → terms(term_id)
+Columns: result_id, student_id, course_id, term_id, letter_grade, grade_points, credits_earned, created_at
+One grade per student, per course, per term.
+
+classes
+Primary key: crn
+Unique: (course_id, section_number, semester_id)
+course_id → courses(course_id)
+faculty_id → faculty(faculty_id)
+lecture_id → lecture_rooms(room_id)
+semester_id → semesters(semester_id)
+Columns: crn, course_id, section_number, faculty_id, time_slot_id, lecture_id, semester_id, available_seats
+crn is the course reference number. lecture_id must be a lecture room, not an office or a lab. time_slot_id is reserved for a meeting-time entity. The master schedule used for registration is sections.
+
+academic_calendar
+Primary key: calendar_id
+term_id → terms(term_id)
+Columns: calendar_id, term_id, event_name, start_date, end_date, notes
+Examples: classes begin, last day to add, final exams.
+
+holds
+Primary key: hold_id
+Unique: hold_type
+Columns: hold_id, hold_type
+The allowed hold names: Bursar, Academic, Registration, Immunization, Financial aid, Disciplinary, Other.
+
+student_holds
+Primary key: hold_id
+student_id → students(student_id)
+Columns: hold_id, student_id, hold_type, note, is_active, created_at, cleared_at
+A student can have more than one hold. is_active is 1 while the hold blocks registration. cleared_at is set when the hold is removed. The hold is not deleted, so the history remains.
+
+
+CAMPUS
+
+buildings
+Primary key: building_id
+Columns: building_id, building_name, building_use
+building_id is a short code such as AB, Lib, Admin, Gym, or SSC.
+
+rooms
+Primary key: room_id
+Unique: (building_id, room_number)
+building_id → buildings(building_id)
+Columns: room_id, building_id, room_number, room_type
+room_type is lecture, lab, or office.
+room_id keeps the source form, such as AB-2024.
+
+lecture_rooms
+Primary key: room_id
+room_id → rooms(room_id)
+Columns: room_id, seats_available
+Only lecture rooms have a seat count.
+
+lab_rooms
+Primary key: room_id
+room_id → rooms(room_id)
+Columns: room_id, workstations
+Only lab rooms have a workstation count.
+
+office_rooms
+Primary key: room_id
+room_id → rooms(room_id)
+Columns: room_id, desk_count
+Only offices have a desk count.
+A lecture seat count is never stored on an office row. That is why the three room kinds are separate tables under rooms.
+
+
+ACCOUNTS
+
+auth_users
+Primary key: id
+Unique: username
+Unique: email
+Columns: id, username, display_name, email, password_hash, role, person_id, is_active, created_at
+role is admin, limited, viewer, or stat.
+stat is the Stat-Dept-Member login. That account can see department statistics and anonymous rosters. It cannot change records and it cannot see a student's name on those rosters.
+person_id points at the faculty user_id for that login when the account is tied to a person.
+password_hash stores the password hash, not the password.
+
+admins
+Primary key: admin_id
+admin_id → auth_users(id)
+Columns: admin_id, security_level
+security_level is view_only, limited, or update_enabled.
+
+
+How the main pieces connect
+
+One user is a student or a faculty member.
+A student row and a faculty row use the same id as that user.
+
+One student has zero or one major, and zero or one minor.
+One major belongs to one department. One department can have many majors.
+One minor belongs to one department.
+
+One student has one advisor. One faculty member advises many students.
+
+One faculty member has one primary department, and can be appointed to other departments with a percent of time.
+
+One course belongs to one department.
+One course has many prerequisite rows, or none.
+One course is offered as many sections. Each section belongs to one term and one instructor.
+
+One student has many enrollments. Each enrollment is one section.
+The same student is not enrolled twice in the same section.
+The grade for that course in that term is one row in student_course_results.
+
+One building has many rooms.
+A room is exactly one of: lecture room, lab room, or office.
+A department office points at one room. A class CRN points at one lecture room.
+
+One term has many sections and many calendar events.
+One student can have many holds.
+
+
+Why this is third normal form
+
+1. Names, addresses, and contact fields are only on users. students and faculty store the id plus the facts that belong only to that role.
+
+2. Department name, email, phone, chair, and office are only on departments. A major stores dept_id, not a second copy of the department name.
+
+3. Course name and credits are only on courses. A section stores course_id. An enrollment stores section_id. A grade stores course_id and term_id.
+
+4. Prerequisites are rows in course_prereqs, so a course is not limited to a single prerequisite column and does not repeat the course name.
+
+5. Faculty appointments are rows in faculty_departments. percent_time stays with that appointment.
+
+6. Lecture seats, lab workstations, and office desks are on the subtype tables, so an office does not carry an empty seat count.
+
+7. Holds are rows in student_holds. Clearing a hold sets cleared_at. It does not rewrite the student.

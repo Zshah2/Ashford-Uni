@@ -71,7 +71,10 @@ function app_front_controller(): string
  */
 function app_use_index_php_in_links(): bool
 {
-    $env = getenv('APP_USE_INDEX_PHP_LINKS');
+    if (!function_exists('app_env')) {
+        require_once __DIR__ . '/env.php';
+    }
+    $env = app_env('APP_USE_INDEX_PHP_LINKS');
     if ($env === '0' || strtolower((string)$env) === 'false' || strtolower((string)$env) === 'off') {
         return false;
     }
@@ -95,7 +98,10 @@ function app_base_path(): string
         return $cached;
     }
 
-    $env = getenv('APP_BASE_PATH');
+    if (!function_exists('app_env')) {
+        require_once __DIR__ . '/env.php';
+    }
+    $env = app_env('APP_BASE_PATH');
     if (is_string($env) && $env !== '') {
         $cached = '/' . trim($env, '/');
 

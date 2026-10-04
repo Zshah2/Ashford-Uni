@@ -5,6 +5,18 @@ declare(strict_types=1);
 /**
  * @return array<string, bool>
  */
+function admin_schedule_level_join(string $level): string
+{
+    if ($level === 'undergrad') {
+        return ' INNER JOIN undergrad_students ug_level ON ug_level.student_id = s.student_id';
+    }
+    if ($level === 'grad') {
+        return ' INNER JOIN (SELECT DISTINCT student_id FROM grad_student_programs) grad_level ON grad_level.student_id = s.student_id';
+    }
+
+    return '';
+}
+
 function admin_schedule_panel_flags_from_list(array $pickedKeys): array
 {
     $keys = ['students', 'faculty', 'terms', 'departments', 'courses', 'sections'];
@@ -83,7 +95,22 @@ function admin_schedule_state(PDO $pdo, array $get): array
         $panelFlags = array_fill_keys($keysOrder, false);
     }
 
+    $rosterLevel = strtolower(trim((string)($get['level'] ?? '')));
+    if (!in_array($rosterLevel, ['undergrad', 'grad'], true)) {
+        $rosterLevel = '';
+    }
+    if ($rosterLevel !== '') {
+        $panelFlags = array_fill_keys($keysOrder, false);
+        $panelFlags['students'] = true;
+    }
+
     $searchQ = trim((string)($get['q'] ?? ''));
+    $searchIdError = null;
+    try {
+        $searchIdError = people_id_lookup_error($pdo, $searchQ);
+    } catch (Throwable) {
+        $searchIdError = null;
+    }
     $courseQ = trim((string)($get['course_q'] ?? ''));
     $catalogDept = trim((string)($get['catalog_dept'] ?? ''));
 
@@ -117,7 +144,9 @@ function admin_schedule_state(PDO $pdo, array $get): array
     $facPage = max(1, (int)($get['fac_page'] ?? 1));
 
     try {
-        if ($unifiedRoster) {
+        if ($searchIdError !== null) {
+            // ID was not a real student or faculty member. Leave the roster empty.
+        } elseif ($unifiedRoster) {
             $stuFrom = ' FROM users u
               INNER JOIN students s ON s.student_id = u.user_id
               LEFT JOIN (
@@ -136,7 +165,7 @@ function admin_schedule_state(PDO $pdo, array $get): array
                   ) AS dept_roles
                 FROM student_departments sd
                 GROUP BY sd.student_id
-              ) sdagg ON sdagg.student_id = u.user_id';
+              ) sdagg ON sdagg.student_id = u.user_id' . admin_schedule_level_join($rosterLevel);
             $stuWhereSql = '';
             $stuParams = [];
             if ($searchQ !== '') {
@@ -265,7 +294,17 @@ function admin_schedule_state(PDO $pdo, array $get): array
                   ) AS dept_roles
                 FROM student_departments sd
                 GROUP BY sd.student_id
-              ) sdagg ON sdagg.student_id = u.user_id';
+              ) sdagg ON sdagg.student_id = u.user_id'
+                . admin_schedule_level_join($rosterLevel) . '
+              LEFT JOIN undergrad_students ug_info ON ug_info.student_id = s.student_id
+              LEFT JOIN majors maj ON maj.major_id = s.major_id
+              LEFT JOIN minors mino ON mino.minor_id = s.minor_id
+              LEFT JOIN (
+                SELECT g.student_id, MIN(p.name) AS program_name
+                FROM grad_student_programs g
+                INNER JOIN programs p ON p.program_id = g.program_id
+                GROUP BY g.student_id
+              ) gprog ON gprog.student_id = s.student_id';
             $stuWhereSql = '';
             $stuParams = [];
             if ($searchQ !== '') {
@@ -296,7 +335,28 @@ function admin_schedule_state(PDO $pdo, array $get): array
                 u.user_id, u.first_name, u.middle_name, u.last_name, u.user_type,
                 u.apt_no, u.street, u.city, u.state, u.zip_code,
                 u.email, u.phone_number,
-                sdagg.dept_roles AS dept_list
+                sdagg.dept_roles AS dept_list,
+                COALESCE(ug_info.student_type, CASE WHEN gprog.student_id IS NOT NULL THEN "Graduate" ELSE u.user_type END) AS student_load,
+                COALESCE(ug_info.academic_year_level, gprog.program_name, "") AS student_year,
+                CONCAT_WS(", ",
+                  IF(maj.major_name IS NULL, NULL, CONCAT(maj.major_name, " (major)")),
+                  IF(mino.minor_name IS NULL, NULL, CONCAT(mino.minor_name, " (minor)"))
+                ) AS program_list,
+                CASE
+                  WHEN EXISTS (
+                    SELECT 1 FROM enrollments en
+                    INNER JOIN sections sec ON sec.section_id = en.section_id
+                    INNER JOIN terms tm ON tm.term_id = sec.term_id
+                    WHERE en.student_id = u.user_id AND en.status = "enrolled" AND CURDATE() BETWEEN tm.start_date AND tm.end_date
+                  ) THEN "Enrolled"
+                  WHEN EXISTS (
+                    SELECT 1 FROM enrollments en
+                    INNER JOIN sections sec ON sec.section_id = en.section_id
+                    INNER JOIN terms tm ON tm.term_id = sec.term_id
+                    WHERE en.student_id = u.user_id AND en.status = "waitlisted" AND CURDATE() BETWEEN tm.start_date AND tm.end_date
+                  ) THEN "Waitlisted"
+                  ELSE "Not enrolled"
+                END AS enrollment_status
             ' . $stuFrom . $stuWhereSql . ' ORDER BY u.last_name, u.first_name, u.user_id LIMIT ' . $lim . ' OFFSET ' . $off;
             $stSt = $pdo->prepare($stuSql);
             $stSt->execute($stuParams);
@@ -421,6 +481,15 @@ function admin_schedule_state(PDO $pdo, array $get): array
             $termId = (int)$tidRaw;
         } else {
             $termId = (int)$terms[0]['term_id'];
+            $today = date('Y-m-d');
+            foreach ($terms as $termRow) {
+                $start = (string)($termRow['start_date'] ?? '');
+                $end = (string)($termRow['end_date'] ?? '');
+                if ($start !== '' && $end !== '' && $today >= $start && $today <= $end) {
+                    $termId = (int)$termRow['term_id'];
+                    break;
+                }
+            }
         }
     }
 
@@ -497,6 +566,7 @@ function admin_schedule_state(PDO $pdo, array $get): array
         'schedule_panels' => $panelFlags,
         'schedule_embed_preservation' => $scheduleEmbedPreserve,
         'search_q' => $searchQ,
+        'search_id_error' => $searchIdError,
         'course_q' => $courseQ,
         'catalog_dept' => $catalogDept,
         'sec_q' => $secQ,
@@ -517,5 +587,6 @@ function admin_schedule_state(PDO $pdo, array $get): array
         'term_id' => $termId,
         'dept_id' => $deptFilter,
         'sections' => $sections,
+        'roster_level' => $rosterLevel,
     ];
 }
