@@ -778,7 +778,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             header('Location: ' . $failRedirect);
             exit;
         }
-        if ($uidRaw === '' || !ctype_digit($uidRaw) || strlen($uidRaw) !== 6) {
+        if ($uidRaw === '' || !ctype_digit($uidRaw) || strlen($uidRaw) !== 7) {
             header('Location: ' . $failRedirect);
             exit;
         }
