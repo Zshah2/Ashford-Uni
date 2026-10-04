@@ -1,0 +1,75 @@
+Ashford College — Client Data Specs
+===================================
+For professor + team lookover. Edit these text files if something needs fixing.
+Do not import to MySQL until everyone is happy with the numbers/samples.
+
+Branch: update_changes_01
+Sample data folder: storage/import/client_review/
+
+
+LECTURE RULES
+-------------
+- Schema in 3rd Normal Form (3NF)
+- Generate realistic university naming (AI OK)
+- Entity data may follow Old Westbury catalog
+- Do NOT copy any master schedules from Old Westbury
+- IDs: 7-digit random (lecture)
+- Courses can have 0 prerequisites or more than one
+
+
+HEADCOUNTS (agreed)
+-------------------
+Undergraduates: 1,200 total
+
+  Class year     Total   Full-time   Part-time
+  -------------  ------  ----------  ---------
+  Freshman       300     200         100
+  Sophomore      300     200         100
+  Junior         300     200         100
+  Senior         300     200         100
+  UG TOTAL       1,200   800         400
+
+Graduates: 300 total (200 full-time, 100 part-time)
+  - Includes Masters + PhD
+  - PhD subset: 50 (20 full-time, 30 part-time)
+  - Masters (rest): 250
+
+Faculty: 400 total
+  - Full-time: 300
+  - Part-time: 100
+
+People total: 1,200 UG + 300 grad + 400 faculty = 1,900
+
+
+STRUCTURE TARGETS
+-----------------
+- Departments: 12 (examples: Math, CS)
+- Majors: 12 (example: CS dept offers CS and MIS)
+- Minors: TBD with professor
+- Courses: catalog-style; majors/minors; prerequisites as above
+
+
+SAMPLE FILES (look over / fix)
+------------------------------
+storage/import/client_review/
+
+  00_README.txt
+  01_departments.txt
+  02_majors.txt
+  03_minors.txt
+  04_faculty.txt
+  05_faculty_departments.txt
+  06_students.txt
+  07_undergrad_detail.txt
+  08_student_major_minor.txt
+  09_grad_detail.txt
+  10_courses_sample.txt
+  SAMPLE_BY_CLASS_AND_FACULTY.txt   ← easiest overview by class year + faculty
+  SAMPLE_20_PEOPLE.txt
+
+
+NOTES
+-----
+- Sample is small on purpose (easy to read). Full 1,200 / 400 comes later.
+- School email brand in samples: @ashford.edu
+- No section/meeting-time / master-schedule rows in the sample

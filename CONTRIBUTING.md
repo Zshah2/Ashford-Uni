@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping on Northbridge College (CollegeWeb). This repo is shared by a small team — follow these rules so nobody overwrites each other's work.
+Thanks for helping on Ashford College (CollegeWeb). This repo is shared by a small team — follow these rules so nobody overwrites each other's work.
 
 ## Golden rule
 

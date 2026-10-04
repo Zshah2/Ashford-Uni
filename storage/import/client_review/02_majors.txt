@@ -1,0 +1,17 @@
+02_majors.txt — MAJORS (8 rows in sample)
+=========================================
+Check: major_id unique; dept_id exists in 01_departments.txt
+Lecture example: one dept can offer more than one major (CS + MIS)
+
+major_id | major_name                        | dept_id | level | notes
+M-CS     | B.S. Computer Science             | COM     | UG    | CS-style major under COM
+M-MIS    | B.S. Management Information Sys.  | COM     | UG    | 2nd major under same dept (lecture example)
+M-MATH   | B.S. Mathematics                  | COM     | UG    |
+M-ECO    | B.A. Economics                    | ECO     | UG    |
+M-BIO    | B.S. Biology                      | BIO     | UG    |
+M-ENGL   | B.A. English                      | ENGL    | UG    |
+M-HIS    | B.A. History                      | HIS     | UG    |
+M-PHY    | B.S. Physics                      | PHY     | UG    |
+
+COUNT: 8 majors in sample (full target later = 12)
+COM owns 3 majors here (CS, MIS, Math) — confirm this pattern with client

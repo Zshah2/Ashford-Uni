@@ -31,6 +31,27 @@ function auth_is_admin(): bool
     return auth_role() === 'admin';
 }
 
+/** Transcript grades stay with the main admin account, not every admin. */
+function auth_can_post_grades(): bool
+{
+    auth_start_session();
+    $username = $_SESSION['auth']['username'] ?? '';
+
+    return $username === 'mainadmin';
+}
+
+/** Teammate accounts land on the access sheet so a test login shows what they can do. */
+function auth_home_view(): string
+{
+    auth_start_session();
+    $username = $_SESSION['auth']['username'] ?? '';
+    if (in_array($username, ['sraza9', 'wbhatti1', 'asewell3'], true)) {
+        return 'team';
+    }
+
+    return 'dashboard';
+}
+
 function auth_is_limited(): bool
 {
     return auth_role() === 'limited';

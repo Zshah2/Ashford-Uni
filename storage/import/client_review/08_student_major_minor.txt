@@ -1,0 +1,39 @@
+08_student_major_minor.txt — MAJOR / MINOR DECLARATIONS
+=======================================================
+Rules in this sample (matches app):
+  - Each undergrad: exactly 1 major
+  - Each undergrad: 0 or 1 minor
+  - Major dept and minor dept must differ
+  - Grad students: no major/minor rows here (program in 09)
+
+Check: student_id in 07; major_id in 02; minor_id in 03 or blank
+Check: major_dept / minor_dept exist in 01
+
+student_id | role  | major_or_minor_id | dept_id | declared_on
+100001     | major | M-CS              | COM     | 2025-08-20
+100001     | minor | N-ECO             | ECO     | 2025-08-20
+100002     | major | M-BIO             | BIO     | 2025-08-20
+100003     | major | M-CS              | COM     | 2024-08-22
+100003     | minor | N-HIS             | HIS     | 2024-08-22
+100004     | major | M-ECO             | ECO     | 2024-08-22
+100005     | major | M-ENGL            | ENGL    | 2023-08-21
+100005     | minor | N-HIS             | HIS     | 2023-08-21
+100006     | major | M-PHY             | PHY     | 2023-08-21
+100007     | major | M-MIS             | COM     | 2022-08-20
+100007     | minor | N-BIO             | BIO     | 2022-08-20
+100008     | major | M-HIS             | HIS     | 2022-08-20
+100008     | minor | N-ENGL            | ENGL    | 2022-08-20
+100009     | major | M-ECO             | ECO     | 2025-08-20
+100009     | minor | N-CS              | COM     | 2025-08-20
+100010     | major | M-BIO             | BIO     | 2024-08-22
+100011     | major | M-ENGL            | ENGL    | 2023-08-21
+100012     | major | M-PHY             | PHY     | 2022-08-20
+100012     | minor | N-CS              | COM     | 2022-08-20
+
+MANUAL COUNT CHECK
+Major rows: 12 (one per UG) 
+Minor rows: 7
+Students with minor: 100001,100003,100005,100007,100008,100009,100012 → 7
+Students major only: 100002,100004,100006,100010,100011 → 5
+MIS example present: 100007 major M-MIS under COM ✓
+No student has same dept for major and minor ✓

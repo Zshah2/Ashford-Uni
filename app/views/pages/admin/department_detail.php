@@ -144,7 +144,7 @@ $statChip = static function (string $label, int $value): string {
                 <a class="<?= htmlspecialchars(ui_link()) ?>" href="<?= htmlspecialchars($peopleHref($chairId)) ?>">
                   <?= $fmtName((string)($department['chair_first'] ?? ''), (string)($department['chair_last'] ?? '')) ?>
                 </a>
-                <span class="ml-1 font-mono text-xs text-slate-500">#<?= $chairId ?></span>
+                <span class="ml-1 inline-flex rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700">ID <?= $chairId ?></span>
                 <?php if (!empty($department['chair_email'])): ?>
                   <div class="mt-0.5 text-xs text-slate-500"><?= htmlspecialchars((string)$department['chair_email']) ?></div>
                 <?php endif; ?>
@@ -172,7 +172,7 @@ $statChip = static function (string $label, int $value): string {
                   <option value=""<?= $chairId === 0 ? ' selected' : '' ?>>No chair</option>
                   <?php if ($chairNeedsExtra): ?>
                     <option value="<?= $chairId ?>" selected>
-                      <?= $fmtName((string)($department['chair_first'] ?? ''), (string)($department['chair_last'] ?? '')) ?> (#<?= $chairId ?>)
+                      <?= $fmtName((string)($department['chair_first'] ?? ''), (string)($department['chair_last'] ?? '')) ?> (ID <?= $chairId ?>)
                     </option>
                   <?php endif; ?>
                   <?php foreach ($faculty as $fRow): ?>
@@ -184,7 +184,7 @@ $statChip = static function (string $label, int $value): string {
                       $label = trim((string)($fRow['last_name'] ?? '') . ', ' . (string)($fRow['first_name'] ?? ''));
                     ?>
                     <option value="<?= $fid ?>"<?= $fid === $chairId ? ' selected' : '' ?>>
-                      <?= htmlspecialchars($label !== '' ? $label : 'Faculty #' . $fid) ?> (<?= $fid ?>)
+                      <?= htmlspecialchars($label !== '' ? $label : 'Faculty') ?> (ID <?= $fid ?>)
                     </option>
                   <?php endforeach; ?>
                 </select>
@@ -245,7 +245,7 @@ $statChip = static function (string $label, int $value): string {
                       <a class="<?= htmlspecialchars(ui_link()) ?>" href="<?= htmlspecialchars($peopleHref($fid)) ?>">
                         <?= $fmtName((string)($f['first_name'] ?? ''), (string)($f['last_name'] ?? '')) ?>
                       </a>
-                      <div class="font-mono text-xs text-slate-500">#<?= $fid ?></div>
+                      <div class="font-mono text-xs text-slate-500">ID <?= $fid ?></div>
                       <?php if (!empty($f['email'])): ?>
                         <div class="truncate text-xs text-slate-500"><?= htmlspecialchars((string)$f['email']) ?></div>
                       <?php endif; ?>
@@ -309,7 +309,7 @@ $statChip = static function (string $label, int $value): string {
                       <a class="<?= htmlspecialchars(ui_link()) ?>" href="<?= htmlspecialchars($peopleHref($sid)) ?>">
                         <?= $fmtName((string)($s['first_name'] ?? ''), (string)($s['last_name'] ?? '')) ?>
                       </a>
-                      <div class="font-mono text-xs text-slate-500">#<?= $sid ?></div>
+                      <div class="font-mono text-xs text-slate-500">ID <?= $sid ?></div>
                       <?php if (!empty($s['email'])): ?>
                         <div class="truncate text-xs text-slate-500"><?= htmlspecialchars((string)$s['email']) ?></div>
                       <?php endif; ?>

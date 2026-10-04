@@ -1,0 +1,25 @@
+10_courses_sample.txt — CATALOG COURSES (sample only)
+=====================================================
+Purpose: show course entities linked to depts (Old Westbury–style flavor).
+NO meeting times / rooms / CRNs / master schedule rows here.
+
+Check: course_id unique; dept_id in 01_departments.txt; credits sensible
+
+course_id | course_name                         | dept_id | credits | active
+CS1001    | Intro to Computer Science           | COM     | 4       | Y
+CS2001    | Data Structures                     | COM     | 4       | Y
+MA2001    | Calculus I                          | COM     | 4       | Y
+MIS2100   | Intro to Information Systems        | COM     | 3       | Y
+EC1500    | Principles of Microeconomics        | ECO     | 3       | Y
+EC2500    | Intermediate Microeconomics         | ECO     | 3       | Y
+BI1500    | General Biology I                   | BIO     | 4       | Y
+BI2500    | Genetics                            | BIO     | 4       | Y
+EN1500    | College Writing                     | ENGL    | 3       | Y
+EN2200    | American Literature                 | ENGL    | 3       | Y
+HI1500    | World History I                     | HIS     | 3       | Y
+HI2100    | U.S. History Since 1877             | HIS     | 3       | Y
+PH1500    | Intro Physics I                     | PHY     | 4       | Y
+PH2500    | Modern Physics                      | PHY     | 4       | Y
+
+COUNT: 14 courses (2+ per sample dept)
+Intentionally NO sections/schedules in Phase 1 sample

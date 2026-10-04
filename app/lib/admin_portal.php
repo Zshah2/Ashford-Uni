@@ -20,7 +20,7 @@ function admin_portal_layout_context(string $navActive, ?string $pageTitle = nul
     auth_start_session();
 
     return [
-        'pageTitle' => $pageTitle ?? 'Administration — Northbridge College',
+        'pageTitle' => $pageTitle ?? 'Administration — Ashford College',
         'admin_nav_active' => $navActive,
         'admin_username' => auth_portal_display_name(),
         'admin_role_label' => admin_portal_role_label(),

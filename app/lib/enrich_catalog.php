@@ -14,7 +14,7 @@ function enrich_catalog_build_description(array $r): string
     $cr = max(1, (int)($r['credits'] ?? 3));
     $deptName = trim((string)($r['dept_name'] ?? ''));
     $deptId = trim((string)($r['dept_id'] ?? ''));
-    $deptLabel = $deptName !== '' ? $deptName : ($deptId !== '' ? $deptId : 'Northbridge');
+    $deptLabel = $deptName !== '' ? $deptName : ($deptId !== '' ? $deptId : 'Ashford');
 
     return "{$name} ({$cid}) is a {$cr}-credit course offered through {$deptLabel}. "
         . 'Students engage with core concepts through readings, discussion, structured assessments, '

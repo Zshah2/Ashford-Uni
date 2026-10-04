@@ -38,15 +38,11 @@
 
   <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
     <a href="<?= htmlspecialchars(url('/')) ?>" class="group inline-flex items-center gap-3">
-      <img
-        src="<?= htmlspecialchars(url('/assets/img/northbridge_university_icon.svg')) ?>"
-        alt="<?= htmlspecialchars($app['site']['name']) ?>"
-        width="48"
-        height="48"
-        class="h-11 w-11 shrink-0 rounded-2xl object-cover shadow-md shadow-black/25 ring-1 ring-white/15 sm:h-12 sm:w-12"
-        loading="eager"
-        decoding="async"
-      />
+      <?php
+      $logoClass = 'h-10 w-auto max-w-[11rem] shrink-0 object-contain sm:h-11 sm:max-w-[13rem]';
+      $logoAlt = $app['site']['name'];
+      require view_path('partials/brand_logo.php');
+      ?>
     </a>
 
     <nav class="hidden items-center gap-5 lg:flex" aria-label="Primary">

@@ -192,8 +192,6 @@ $schedulePaginationPages = static function (int $current, int $last): array {
     <input type="hidden" name="view" value="schedule" />
   <?php endif; ?>
   <input type="hidden" name="sched_filter" value="1" />
-  <input type="hidden" name="panels[students]" value="1" />
-  <input type="hidden" name="panels[faculty]" value="1" />
 
   <div class="grid gap-4 sm:grid-cols-2">
     <div class="min-w-0">
@@ -219,6 +217,17 @@ $schedulePaginationPages = static function (int $current, int $last): array {
       </div>
       <div class="pb-0.5 text-xs text-slate-500">Applies to the roster list.</div>
     </div>
+  </div>
+
+  <div class="flex flex-wrap items-center gap-4">
+    <label class="inline-flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+      <input type="checkbox" name="panels[students]" value="1" <?= !empty($schedule_panels['students']) ? 'checked' : '' ?> class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+      Students
+    </label>
+    <label class="inline-flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+      <input type="checkbox" name="panels[faculty]" value="1" <?= !empty($schedule_panels['faculty']) ? 'checked' : '' ?> class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+      Faculty
+    </label>
   </div>
 
   <input type="hidden" name="stu_page" value="1" />
@@ -355,17 +364,7 @@ $schedulePaginationPages = static function (int $current, int $last): array {
               <a class="<?= $isFac ? htmlspecialchars($schedule_id_link_faculty, ENT_QUOTES, 'UTF-8') : htmlspecialchars($schedule_id_link_student, ENT_QUOTES, 'UTF-8') ?>" href="<?= htmlspecialchars($idHref) ?>"><?= $uid ?></a>
             </td>
             <td class="px-4 py-3"><?= htmlspecialchars((string)($r['last_name'] ?? '')) ?></td>
-            <td class="px-4 py-3">
-              <?php
-                $first = (string)($r['first_name'] ?? '');
-                $last = (string)($r['last_name'] ?? '');
-                $show = $first;
-                if ($isFac) {
-                    $show = trim($first) . ' #' . $uid;
-                }
-                echo htmlspecialchars($show);
-              ?>
-            </td>
+            <td class="px-4 py-3"><?= htmlspecialchars((string)($r['first_name'] ?? '')) ?></td>
             <td class="px-4 py-3 max-w-[24rem] truncate text-slate-700">
               <?php $dl = trim((string)($r['dept_list'] ?? '')); ?>
               <?= $dl !== '' ? htmlspecialchars($dl) : '—' ?>
@@ -606,19 +605,7 @@ $schedulePaginationPages = static function (int $current, int $last): array {
               <a class="<?= htmlspecialchars($schedule_id_link_faculty, ENT_QUOTES, 'UTF-8') ?>" href="<?= htmlspecialchars($schedule_href_faculty_person((int)$r['faculty_id'])) ?>"><?= (int)$r['faculty_id'] ?></a>
             </td>
             <td class="px-4 py-3"><?= htmlspecialchars((string)$r['last_name']) ?></td>
-            <td class="px-4 py-3">
-              <?php
-                $first = (string)($r['first_name'] ?? '');
-                $last = (string)($r['last_name'] ?? '');
-                $fid = (int)($r['faculty_id'] ?? 0);
-                $k = strtolower(trim($last)) . '|' . strtolower(trim($first));
-                $show = $first;
-                if ($fid > 0) {
-                    $show = trim($first) . ' #' . $fid;
-                }
-                echo htmlspecialchars($show);
-              ?>
-            </td>
+            <td class="px-4 py-3"><?= htmlspecialchars((string)($r['first_name'] ?? '')) ?></td>
             <td class="px-4 py-3 text-slate-600"><?= htmlspecialchars((string)($r['middle_name'] ?? '')) ?></td>
             <td class="px-4 py-3 text-slate-600"><?= htmlspecialchars((string)$r['user_type']) ?></td>
             <td class="px-4 py-3 max-w-[28rem] truncate text-slate-700">

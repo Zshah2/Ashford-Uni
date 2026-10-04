@@ -4,6 +4,8 @@
 /** @var int|null $term_id */
 /** @var list<array<string, mixed>> $dept_rows */
 /** @var string $dept_id */
+/** @var string $crn */
+/** @var int|null $faculty_id */
 /** @var string $q */
 /** @var list<array<string, mixed>> $course_sections */
 /** @var int $course_sections_total */
@@ -15,6 +17,8 @@ $terms = $terms ?? [];
 $term_id = $term_id ?? null;
 $dept_rows = $dept_rows ?? [];
 $dept_id = $dept_id ?? '';
+$crn = $crn ?? '';
+$faculty_id = isset($faculty_id) && $faculty_id !== null ? (int)$faculty_id : null;
 $q = $q ?? '';
 $course_sections = $course_sections ?? [];
 $course_sections_total = (int)($course_sections_total ?? 0);
@@ -28,13 +32,19 @@ $total_pages = max(1, (int)($total_pages ?? 1));
 $from = $course_sections_total > 0 ? (($page - 1) * $per_page + 1) : 0;
 $to = min($course_sections_total, ($page - 1) * $per_page + count($course_sections));
 
-$pagerUrl = static function (int $p) use ($term_id, $dept_id, $q, $per_page): string {
+$pagerUrl = static function (int $p) use ($term_id, $dept_id, $crn, $faculty_id, $q, $per_page): string {
     $qparams = ['view' => 'courses', 'page' => max(1, $p)];
     if ($term_id !== null) {
         $qparams['term_id'] = (string)$term_id;
     }
     if ($dept_id !== '') {
         $qparams['dept_id'] = $dept_id;
+    }
+    if ($crn !== '') {
+      $qparams['crn'] = $crn;
+    }
+    if ($faculty_id !== null) {
+      $qparams['faculty_id'] = (string)$faculty_id;
     }
     if ($q !== '') {
         $qparams['q'] = $q;
@@ -69,13 +79,19 @@ $edit_section_id = isset($_GET['edit_section']) && ctype_digit((string)$_GET['ed
     ? (int)$_GET['edit_section']
     : null;
 
-$coursesPageUrl = static function (?int $editSection = null) use ($term_id, $dept_id, $q, $per_page, $page): string {
+$coursesPageUrl = static function (?int $editSection = null) use ($term_id, $dept_id, $crn, $faculty_id, $q, $per_page, $page): string {
     $qparams = ['view' => 'courses', 'page' => $page];
     if ($term_id !== null) {
         $qparams['term_id'] = (string)$term_id;
     }
     if ($dept_id !== '') {
         $qparams['dept_id'] = $dept_id;
+    }
+    if ($crn !== '') {
+      $qparams['crn'] = $crn;
+    }
+    if ($faculty_id !== null) {
+      $qparams['faculty_id'] = (string)$faculty_id;
     }
     if ($q !== '') {
         $qparams['q'] = $q;
@@ -111,46 +127,93 @@ $courseDetailHref = static function (string $courseId, ?int $sectionId = null) u
   <a class="<?= htmlspecialchars(ui_link()) ?>" href="<?= htmlspecialchars(url('/admin.php?view=schedule')) ?>">Master schedule</a>.
 </p>
 
-<div class="mt-5 <?= htmlspecialchars(ui_card('p-5')) ?>">
-  <form class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end" method="get">
+<div id="course-filters-wrap" class="mt-5">
+  <div class="mb-2 flex items-center justify-between gap-3">
+    <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">Course filters</span>
+    <button id="course-filters-toggle" type="button" class="<?= htmlspecialchars(ui_btn_secondary()) ?>">Hide filters</button>
+  </div>
+  <div id="course-filters-panel" class="<?= htmlspecialchars(ui_card('p-5')) ?>">
+  <form class="grid gap-4" method="get">
     <input type="hidden" name="view" value="courses" />
-    <div class="sm:w-56">
-      <label class="<?= htmlspecialchars(ui_label()) ?>" for="co-term">Term</label>
-      <select id="co-term" name="term_id" class="<?= htmlspecialchars(ui_select()) ?>">
-        <?php foreach ($terms as $t): $tid = (int)($t['term_id'] ?? 0); ?>
-          <option value="<?= (int)$tid ?>" <?= $term_id !== null && $tid === $term_id ? 'selected' : '' ?>>
-            <?= htmlspecialchars((string)($t['code'] ?? '')) ?> — <?= htmlspecialchars((string)($t['name'] ?? '')) ?>
-          </option>
-        <?php endforeach; ?>
-      </select>
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div class="min-w-0">
+        <label class="<?= htmlspecialchars(ui_label()) ?>" for="co-term">Term</label>
+        <select id="co-term" name="term_id" class="<?= htmlspecialchars(ui_select()) ?> w-full">
+          <?php foreach ($terms as $t): $tid = (int)($t['term_id'] ?? 0); ?>
+            <option value="<?= (int)$tid ?>" <?= $term_id !== null && $tid === $term_id ? 'selected' : '' ?>>
+              <?= htmlspecialchars((string)($t['code'] ?? '')) ?> — <?= htmlspecialchars((string)($t['name'] ?? '')) ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="min-w-0">
+        <label class="<?= htmlspecialchars(ui_label()) ?>" for="co-dept">Department</label>
+        <select id="co-dept" name="dept_id" class="<?= htmlspecialchars(ui_select()) ?> w-full">
+          <option value="">All departments</option>
+          <?php foreach ($dept_rows as $d): $did = (string)($d['dept_id'] ?? ''); ?>
+            <option value="<?= htmlspecialchars($did) ?>" <?= $did !== '' && $did === $dept_id ? 'selected' : '' ?>>
+              <?= htmlspecialchars($did) ?> — <?= htmlspecialchars((string)($d['dept_name'] ?? '')) ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="min-w-0">
+        <label class="<?= htmlspecialchars(ui_label()) ?>" for="co-crn">CRN / Section ID</label>
+        <input id="co-crn" name="crn" value="<?= htmlspecialchars($crn) ?>" inputmode="numeric" pattern="[0-9]+" class="<?= htmlspecialchars(ui_input()) ?> w-full" placeholder="e.g. 1042" />
+      </div>
+      <div class="min-w-0">
+        <label class="<?= htmlspecialchars(ui_label()) ?>" for="co-faculty">Professor</label>
+        <select id="co-faculty" name="faculty_id" class="<?= htmlspecialchars(ui_select()) ?> w-full">
+          <option value="">All professors</option>
+          <?php foreach ($faculty_rows as $f): $fid = (int)($f['faculty_id'] ?? 0); ?>
+            <option value="<?= $fid ?>" <?= $faculty_id === $fid ? 'selected' : '' ?>><?= htmlspecialchars(trim((string)($f['last_name'] ?? '') . ', ' . (string)($f['first_name'] ?? ''))) ?> (<?= $fid ?>)</option>
+          <?php endforeach; ?>
+        </select>
+      </div>
     </div>
-    <div class="sm:w-52">
-      <label class="<?= htmlspecialchars(ui_label()) ?>" for="co-dept">Department</label>
-      <select id="co-dept" name="dept_id" class="<?= htmlspecialchars(ui_select()) ?>">
-        <option value="">All departments</option>
-        <?php foreach ($dept_rows as $d): $did = (string)($d['dept_id'] ?? ''); ?>
-          <option value="<?= htmlspecialchars($did) ?>" <?= $did !== '' && $did === $dept_id ? 'selected' : '' ?>>
-            <?= htmlspecialchars($did) ?> — <?= htmlspecialchars((string)($d['dept_name'] ?? '')) ?>
-          </option>
-        <?php endforeach; ?>
-      </select>
+    <div class="min-w-0">
+      <label class="<?= htmlspecialchars(ui_label()) ?>" for="co-q">Search courses</label>
+      <input id="co-q" name="q" value="<?= htmlspecialchars($q) ?>" class="<?= htmlspecialchars(ui_input()) ?> w-full" placeholder="Course ID, title, instructor, section ID, room…" />
     </div>
-    <div class="min-w-0 flex-1">
-      <label class="<?= htmlspecialchars(ui_label()) ?>" for="co-q">Search</label>
-      <input id="co-q" name="q" value="<?= htmlspecialchars($q) ?>" class="<?= htmlspecialchars(ui_input()) ?>" placeholder="Course ID, title, instructor, section ID, room…" />
+    <div class="flex flex-wrap items-end gap-3 border-t border-slate-200 pt-4 dark:border-slate-700">
+      <div class="w-full sm:w-40">
+        <label class="<?= htmlspecialchars(ui_label()) ?>" for="co-per">Rows per page</label>
+        <select id="co-per" name="per_page" class="<?= htmlspecialchars(ui_select()) ?> w-full">
+          <?php foreach ([25, 50, 100, 200] as $pp): ?>
+            <option value="<?= (int)$pp ?>" <?= $per_page === $pp ? 'selected' : '' ?>><?= (int)$pp ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <button type="submit" class="<?= htmlspecialchars(ui_btn_primary()) ?> !px-3 !py-2 text-sm">Apply</button>
+      <a class="<?= htmlspecialchars(ui_btn_secondary()) ?>" href="<?= htmlspecialchars(url('/admin.php?view=courses')) ?>">Reset</a>
     </div>
-    <div class="sm:w-36">
-      <label class="<?= htmlspecialchars(ui_label()) ?>" for="co-per">Rows</label>
-      <select id="co-per" name="per_page" class="<?= htmlspecialchars(ui_select()) ?>">
-        <?php foreach ([25, 50, 100, 200] as $pp): ?>
-          <option value="<?= (int)$pp ?>" <?= $per_page === $pp ? 'selected' : '' ?>><?= (int)$pp ?></option>
-        <?php endforeach; ?>
-      </select>
-    </div>
-    <button type="submit" class="<?= htmlspecialchars(ui_btn_primary()) ?>">Apply</button>
-    <a class="<?= htmlspecialchars(ui_btn_secondary()) ?>" href="<?= htmlspecialchars(url('/admin.php?view=courses')) ?>">Reset</a>
   </form>
+  </div>
+  <button id="course-filters-show" type="button" class="hidden <?= htmlspecialchars(ui_btn_secondary()) ?>">Show filters</button>
 </div>
+
+<script>
+(function () {
+  var panel = document.getElementById('course-filters-panel');
+  var toggle = document.getElementById('course-filters-toggle');
+  var show = document.getElementById('course-filters-show');
+  if (!panel || !toggle || !show) return;
+
+  function setHidden(hidden) {
+    panel.classList.toggle('hidden', hidden);
+    toggle.classList.toggle('hidden', hidden);
+    show.classList.toggle('hidden', !hidden);
+    try { localStorage.setItem('course_filters_hidden', hidden ? '1' : '0'); } catch (e) {}
+  }
+
+  toggle.addEventListener('click', function () { setHidden(true); });
+  show.addEventListener('click', function () { setHidden(false); });
+
+  try {
+    if (localStorage.getItem('course_filters_hidden') === '1') setHidden(true);
+  } catch (e) {}
+})();
+</script>
 
 <?php if (!empty($isAdmin) && $terms !== []): ?>
   <details class="group mt-5 rounded-2xl border border-indigo-200 bg-indigo-50/40 shadow-sm open:bg-white dark:border-indigo-900 dark:bg-indigo-950/30 dark:open:bg-slate-900" <?= $highlight_section !== null ? 'open' : '' ?>>

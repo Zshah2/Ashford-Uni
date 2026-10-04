@@ -1,0 +1,15 @@
+01_departments.txt — DEPARTMENTS (6 rows)
+=========================================
+Check: every dept_id unique; email ends with @ashford.edu
+
+dept_id | dept_name                           | building | room    | chair_id | email                         | phone
+COM     | Computer Science And Mathematics    | AB       | AB-2024 | 900001   | computerscience@ashford.edu   | (516) 867-4881
+ECO     | Economics                           | AB       | AB-2022 | 900003   | economics@ashford.edu         | (516) 867-4284
+BIO     | Biology                             | AB       | AB-2025 | 900004   | biology@ashford.edu           | (516) 867-4545
+ENGL    | English                             | Lib      | Lib-1106| 900005   | english@ashford.edu           | (516) 867-4902
+HIS     | History                             | Lib      | Lib-1107| 900006   | history@ashford.edu           | (516) 867-4495
+PHY     | Physics                             | AB       | AB-0021 | 900002   | physics@ashford.edu           | (516) 867-4875
+
+NOTES
+- chair_id must exist in 04_faculty.txt
+- Later full build will expand to 12 departments

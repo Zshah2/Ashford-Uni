@@ -35,6 +35,7 @@ $adminNavGroup = static function (string $label): string {
   <?= $adminNavItem(url('/admin.php?view=holds'), 'Holds', $view === 'holds') ?>
   <?php if ($isAdmin): ?>
     <?= $adminNavItem(url('/admin.php?view=accounts'), 'Accounts', $view === 'accounts') ?>
+    <?= $adminNavItem(url('/admin.php?view=team'), 'Team access', $view === 'team') ?>
   <?php endif; ?>
   <?= $adminNavGroup('Insights & preferences') ?>
   <?= $adminNavItem(url('/admin.php?view=reports'), 'Reports & Analytics', $view === 'reports') ?>

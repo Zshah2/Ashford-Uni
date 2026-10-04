@@ -1,20 +1,53 @@
-## Northbridge College (CollegeWeb)
+## Ashford College (CollegeWeb)
 
 PHP + MySQL (PDO) + Tailwind. Public site uses the front controller (`public/index.php`); **admins** use **`public/login.php`** and the unified **`public/admin.php`** dashboard.
 
+You need PHP 8 and MySQL 8. `git clone` downloads the files. MySQL loads the students and logins when you import `database/collegeweb.sql`. That import replaces only the database named `collegeweb`. Other databases on your computer stay as they are.
+
+### After you clone
+
+```bash
+git clone https://github.com/Zshah2/Ashford-Uni.git
+cd Ashford-Uni
+git checkout update_changes_01
+cp app/config/database.local.php.example app/config/database.local.php
+```
+
+Open `app/config/database.local.php` and set `password` to the MySQL password on this computer.
+
+```bash
+mysql -u root -p < database/collegeweb.sql
+php -S 127.0.0.1:8000 -t public public/router.php
+```
+
+Open http://127.0.0.1:8000/login.php and sign in with your email and password `Main@1234`.
+
+| Name | Email |
+| --- | --- |
+| Mohammad | zshah2@oldwestbury.edu |
+| Ariana | asewell3@oldwestbury.edu |
+| Sibtain | sraza9@oldwestbury.edu |
+| Waleed | wbhatti1@oldwestbury.edu |
+
+Use the full email. The username alone is rejected.
+
+### If you already cloned
+
+```bash
+cd Ashford-Uni
+git checkout update_changes_01
+git pull
+mysql -u root -p < database/collegeweb.sql
+php -S 127.0.0.1:8000 -t public public/router.php
+```
+
+`git pull` does not load MySQL. The `mysql` command does. Type this computer’s MySQL password when it asks. Import again only when you want to replace `collegeweb` with the copy from GitHub.
+
 ### For teammates
 
-If you were invited as a GitHub collaborator:
-
-1. Read **[CONTRIBUTING.md](CONTRIBUTING.md)** — **never push directly to `main`**; always use a feature branch and Pull Request.
-2. Follow **[docs/COLLAB.md](docs/COLLAB.md)** for clone → DB → migrate → run server.
-3. Quick setup: `bash scripts/setup_teammate.sh` (after configuring DB; see below).
+If you were invited as a GitHub collaborator, read **[CONTRIBUTING.md](CONTRIBUTING.md)** before pushing. Use a feature branch and a pull request. Do not push directly to `main`.
 
 Branch example: `git checkout -b feature/your-name-topic` from latest `main`.
-
-### Admin accounts (local only)
-
-Demo usernames and passwords are **not** stored in this repo. After cloning, copy `docs/LOGIN_CREDENTIALS.txt.example` → `docs/LOGIN_CREDENTIALS.txt` and fill in values for your machine (that file is gitignored).
 
 ### Database credentials
 
@@ -22,7 +55,9 @@ The app connects through **`app/lib/db.php`**. On a cloud host, set `DB_HOST`, `
 
 If you see **“Cannot connect to MySQL”** on the login page, MySQL may be stopped **or** the DB user/password in your local config does not match your server.
 
-### Setup
+### Optional: rebuild an empty database from the CSV files
+
+Skip this if you imported `database/collegeweb.sql`. These commands replace `collegeweb` with the older import, not the shared copy.
 
 ```bash
 # Create DB (example)
@@ -72,10 +107,10 @@ Staff sign-in is **email + password** (no 2FA for now). Optional email OTP can b
 ### Built-in server
 
 ```bash
-php -S localhost:8000 -t public public/router.php
+php -S 127.0.0.1:8000 -t public public/router.php
 ```
 
-Then open `http://localhost:8000/` and `http://localhost:8000/login.php`.
+Then open `http://127.0.0.1:8000/` and `http://127.0.0.1:8000/login.php`.
 
 ### Requirements
 
@@ -83,12 +118,22 @@ Then open `http://localhost:8000/` and `http://localhost:8000/login.php`.
 - MySQL 8+ (or compatible)
 - [Composer](https://getcomposer.org/) (optional; only needed if you enable email OTP later)
 
+### Health checks
+
+Run a quick validation pass before you compare branches or prepare changes:
+
+```bash
+composer run check
+```
+
+This validates PHP syntax across the app, config, public entry points, and scripts.
+
 ### Deploy (DigitalOcean, AWS, VPS)
 
 See **[docs/DEPLOY.md](docs/DEPLOY.md)** for environment variables (`DB_*`, `SMTP_*`), `composer install`, and `php scripts/migrate.php`. Moving servers: **[docs/MIGRATING_TO_DIFFERENT_SERVER.md](docs/MIGRATING_TO_DIFFERENT_SERVER.md)**.
 
 ### Project notes
 
-- Department emails in `storage/import/department.csv` use `@northbridge.edu`; re-run `import_all.php` after edits.
+- Department emails in `storage/import/department.csv` use `@ashford.edu`; re-run `import_all.php` after edits.
 - UI polish backlog: [docs/UI_FINE_TUNE_CHECKLIST.txt](docs/UI_FINE_TUNE_CHECKLIST.txt)
 - Grader checklist: [docs/PROFESSOR_TEST_CHECKLIST.md](docs/PROFESSOR_TEST_CHECKLIST.md)

@@ -21,7 +21,7 @@ function twofa_config(): array
         'smtp_username' => '',
         'smtp_password' => '',
         'from_email' => '',
-        'from_name' => 'Northbridge College',
+        'from_name' => 'Ashford College',
         'otp_expiry_minutes' => 5,
     ];
 

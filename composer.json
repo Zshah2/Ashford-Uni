@@ -1,9 +1,13 @@
 {
     "name": "collegeweb/app",
-    "description": "Northbridge College web application",
+    "description": "Ashford College web application",
     "require": {
         "php": ">=8.1",
         "phpmailer/phpmailer": "^6.9"
+    },
+    "scripts": {
+        "check:php": "bash scripts/check_php_syntax.sh",
+        "check": "@composer run check:php"
     },
     "config": {
         "sort-packages": true

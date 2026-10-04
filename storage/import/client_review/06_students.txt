@@ -1,0 +1,23 @@
+06_students.txt — ALL STUDENTS (14 rows)
+=======================================
+Check: student_id unique; 100xxx range; user_type Student
+
+student_id | first_name | last_name | gender | dob        | user_type | email
+100001     | Aisha      | Rahman    | F      | 2007-03-12 | Student   | arahman@ashford.edu
+100002     | Ben        | Alvarez   | M      | 2007-11-02 | Student   | balvarez@ashford.edu
+100003     | Chloe      | Nguyen    | F      | 2006-05-18 | Student   | cnguyen@ashford.edu
+100004     | Derek      | Patel     | M      | 2006-09-09 | Student   | dpatel@ashford.edu
+100005     | Emily      | Santos    | F      | 2005-01-22 | Student   | esantos@ashford.edu
+100006     | Farid      | Hassan    | M      | 2005-07-30 | Student   | fhassan@ashford.edu
+100007     | Grace      | Kim       | F      | 2004-04-14 | Student   | gkim@ashford.edu
+100008     | Hector     | Morales   | M      | 2004-12-01 | Student   | hmorales@ashford.edu
+100009     | Ivy        | Thompson  | F      | 2007-08-25 | Student   | ithompson@ashford.edu
+100010     | Jordan     | Lee       | M      | 2006-02-17 | Student   | jlee@ashford.edu
+100011     | Kayla      | Brown     | F      | 2005-10-05 | Student   | kbrown@ashford.edu
+100012     | Liam       | Foster    | M      | 2004-06-28 | Student   | lfoster@ashford.edu
+100013     | Nora       | Singh     | F      | 1999-09-14 | Student   | nsingh@ashford.edu
+100014     | Omar       | Diaz      | M      | 1998-02-03 | Student   | odiaz@ashford.edu
+
+COUNT: 14 students
+UG = 100001–100012 (see 07_undergrad_detail.txt)
+Grad = 100013–100014 (see 09_grad_detail.txt)

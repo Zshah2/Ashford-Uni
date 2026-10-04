@@ -12,6 +12,8 @@ declare(strict_types=1);
  *   term_id: int|null,
  *   dept_rows: list<array<string, mixed>>,
  *   dept_id: string,
+ *   crn: string,
+ *   faculty_id: int|null,
  *   q: string,
  *   course_sections: list<array<string, mixed>>,
  *   course_sections_total: int,
@@ -62,6 +64,12 @@ function admin_course_offerings_state(PDO $pdo, array $get): array
     }
 
     $q = trim((string)($get['q'] ?? ''));
+    $crn = trim((string)($get['crn'] ?? ''));
+    if ($crn !== '' && !ctype_digit($crn)) {
+        $crn = '';
+    }
+    $facultyRaw = trim((string)($get['faculty_id'] ?? ''));
+    $facultyId = $facultyRaw !== '' && ctype_digit($facultyRaw) ? (int)$facultyRaw : null;
 
     $perPage = (int)($get['per_page'] ?? 50);
     if (!in_array($perPage, [25, 50, 100, 200], true)) {
@@ -78,6 +86,14 @@ function admin_course_offerings_state(PDO $pdo, array $get): array
         if ($deptFilter !== '') {
             $where[] = 'c.dept_id = ?';
             $bind[] = $deptFilter;
+        }
+        if ($crn !== '') {
+            $where[] = 's.section_id = ?';
+            $bind[] = (int)$crn;
+        }
+        if ($facultyId !== null) {
+            $where[] = 's.faculty_id = ?';
+            $bind[] = $facultyId;
         }
         if ($q !== '') {
             $where[] = '(
@@ -144,11 +160,11 @@ function admin_course_offerings_state(PDO $pdo, array $get): array
           LEFT JOIN users u ON u.user_id = f.faculty_id
           WHERE {$whereSql}
           ORDER BY c.course_id, s.section_id
-          LIMIT ? OFFSET ?
+                    LIMIT {$perPage} OFFSET {$offset}
         ";
         try {
             $st = $pdo->prepare($sql);
-            $st->execute(array_merge($bind, [$perPage, $offset]));
+                        $st->execute($bind);
             $rows = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
         } catch (Throwable) {
             $rows = [];
@@ -235,6 +251,8 @@ function admin_course_offerings_state(PDO $pdo, array $get): array
         'term_id' => $termId,
         'dept_rows' => $deptRows,
         'dept_id' => $deptFilter,
+        'crn' => $crn,
+        'faculty_id' => $facultyId,
         'q' => $q,
         'course_sections' => $rows,
         'course_sections_total' => $total,

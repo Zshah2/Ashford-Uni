@@ -74,7 +74,7 @@ $fmtLocation = static function (array $d): string {
       </div>
       <div>
         <label class="<?= htmlspecialchars(ui_label()) ?>" for="dept-email-new">Email</label>
-        <input id="dept-email-new" name="email" type="email" class="<?= htmlspecialchars(ui_input()) ?>" placeholder="art@northbridge.edu" />
+        <input id="dept-email-new" name="email" type="email" class="<?= htmlspecialchars(ui_input()) ?>" placeholder="art@ashford.edu" />
       </div>
       <div>
         <label class="<?= htmlspecialchars(ui_label()) ?>" for="dept-phone-new">Phone</label>
