@@ -26,6 +26,7 @@
 $schedule_panels = $schedule_panels ?? [];
 $schedule_embed_preservation = $schedule_embed_preservation ?? false;
 $search_q = $search_q ?? '';
+$search_id_error = isset($search_id_error) && is_string($search_id_error) && $search_id_error !== '' ? $search_id_error : null;
 $course_q = $course_q ?? '';
 $catalog_dept = $catalog_dept ?? '';
 $sec_q = $sec_q ?? '';
@@ -47,6 +48,10 @@ if (!in_array($schedule_per_page, [25, 50, 100, 200], true)) {
 $roster_rows = $roster_rows ?? [];
 $roster_total = (int)($roster_total ?? 0);
 $schedule_unified_roster = !empty($schedule_unified_roster);
+$roster_level = (string)($roster_level ?? '');
+if (!in_array($roster_level, ['undergrad', 'grad'], true)) {
+    $roster_level = '';
+}
 /** GET form target: routed URL, or admin.php?view=schedule when embedded in public/admin.php */
 $schedule_form_action = isset($schedule_form_action) && is_string($schedule_form_action) && $schedule_form_action !== ''
     ? $schedule_form_action
@@ -99,13 +104,17 @@ $schedulePagerHref = static function (int $stuP, int $facP) use (
     $dept_id,
     $sec_q,
     $schedule_per_page,
-    $schedule_unified_roster
+    $schedule_unified_roster,
+    $roster_level
 ): string {
     $q = [];
     if (!empty($schedule_needs_view_hidden)) {
         $q['view'] = 'schedule';
     }
     $q['sched_filter'] = '1';
+    if (in_array($roster_level, ['undergrad', 'grad'], true)) {
+        $q['level'] = $roster_level;
+    }
     foreach ($schedule_panels as $pk => $on) {
         if ($on) {
             $q['panels[' . $pk . ']'] = '1';
@@ -162,9 +171,26 @@ $schedulePaginationPages = static function (int $current, int $last): array {
 };
 ?>
 
-<h1 class="<?= htmlspecialchars(ui_h1()) ?>">Master schedule</h1>
+<?php
+  $scheduleTitle = 'Master schedule';
+  $scheduleLead = 'A full directory of students and faculty.';
+  $studentHeading = 'Students';
+  if ($roster_level === 'undergrad') {
+      $scheduleTitle = 'Undergraduates';
+      $scheduleLead = 'Undergraduate students only.';
+      $studentHeading = 'Undergraduates';
+  } elseif ($roster_level === 'grad') {
+      $scheduleTitle = 'Graduates';
+      $scheduleLead = 'Graduate students only.';
+      $studentHeading = 'Graduates';
+  } elseif (!empty($schedule_panels['faculty']) && empty($schedule_panels['students'])) {
+      $scheduleTitle = 'Faculty';
+      $scheduleLead = 'Faculty directory.';
+  }
+?>
+<h1 class="<?= htmlspecialchars(ui_h1()) ?>"><?= htmlspecialchars($scheduleTitle) ?></h1>
 <p class="mt-2 <?= htmlspecialchars(ui_muted()) ?>">
-  A full directory of <strong class="font-semibold text-slate-800 dark:text-slate-200">students and faculty</strong>. Search by ID, name, email, or phone. Row IDs link to the person’s record.
+  <?= htmlspecialchars($scheduleLead) ?> Search by ID, name, email, or phone. Row IDs link to the person’s record.
 </p>
 
 <details class="group mt-5 rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4 shadow-sm open:ring-1 open:ring-indigo-100 dark:border-indigo-900 dark:bg-indigo-950/30 dark:open:ring-indigo-900">
@@ -192,6 +218,9 @@ $schedulePaginationPages = static function (int $current, int $last): array {
     <input type="hidden" name="view" value="schedule" />
   <?php endif; ?>
   <input type="hidden" name="sched_filter" value="1" />
+  <?php if (in_array($roster_level, ['undergrad', 'grad'], true)): ?>
+    <input type="hidden" name="level" value="<?= htmlspecialchars($roster_level) ?>" />
+  <?php endif; ?>
 
   <div class="grid gap-4 sm:grid-cols-2">
     <div class="min-w-0">
@@ -202,9 +231,14 @@ $schedulePaginationPages = static function (int $current, int $last): array {
         name="q"
         value="<?= htmlspecialchars($search_q) ?>"
         placeholder="ID, name, email, or phone"
-        class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm"
+        class="mt-1 w-full rounded-xl border bg-white px-3 py-2 text-sm text-slate-900 shadow-sm <?= $search_id_error !== null ? 'border-rose-300' : 'border-slate-200' ?>"
         autocomplete="off"
+        aria-invalid="<?= $search_id_error !== null ? 'true' : 'false' ?>"
+        <?= $search_id_error !== null ? 'aria-describedby="schedule-id-error"' : '' ?>
       />
+      <?php if ($search_id_error !== null): ?>
+        <div id="schedule-id-error" class="mt-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-950" role="alert"><?= htmlspecialchars($search_id_error) ?></div>
+      <?php endif; ?>
     </div>
     <div class="flex items-end gap-4">
       <div>
@@ -410,7 +444,7 @@ $schedulePaginationPages = static function (int $current, int $last): array {
             ?></td>
           </tr>
         <?php endforeach; ?>
-        <?php if (!$roster_rows): ?>
+        <?php if (!$roster_rows && $search_id_error === null): ?>
           <tr>
             <td class="px-4 py-6 text-center text-slate-500" colspan="9">
               <?= $search_q !== '' ? 'No people match this search.' : 'No people rows in the database yet.' ?>
@@ -430,7 +464,7 @@ $schedulePaginationPages = static function (int $current, int $last): array {
   ?>
   <div class="mt-10 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
     <h2 class="text-lg font-semibold text-slate-900">
-      Students
+      <?= htmlspecialchars($studentHeading) ?>
       <span class="block text-sm font-normal text-slate-500 sm:inline sm:pl-1">
         <?= (int)$student_total ?> total<?php if ($student_total > 0): ?> · rows <?= (int)$stu_row_from ?>–<?= (int)$stu_row_to ?><?php endif; ?>
       </span>
@@ -467,11 +501,13 @@ $schedulePaginationPages = static function (int $current, int $last): array {
           <th class="px-4 py-3">Last name</th>
           <th class="px-4 py-3">First name</th>
           <th class="px-4 py-3">Middle</th>
-          <th class="px-4 py-3">Type</th>
+          <th class="px-4 py-3">Student type</th>
+          <th class="px-4 py-3">Student year</th>
           <th class="px-4 py-3">Majors / minors</th>
           <th class="px-4 py-3">Address</th>
           <th class="px-4 py-3">Email</th>
           <th class="px-4 py-3">Phone</th>
+          <th class="px-4 py-3">Enrollment status</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-200">
@@ -483,9 +519,13 @@ $schedulePaginationPages = static function (int $current, int $last): array {
             <td class="px-4 py-3"><?= htmlspecialchars((string)$r['last_name']) ?></td>
             <td class="px-4 py-3"><?= htmlspecialchars((string)$r['first_name']) ?></td>
             <td class="px-4 py-3 text-slate-600"><?= htmlspecialchars((string)($r['middle_name'] ?? '')) ?></td>
-            <td class="px-4 py-3 text-slate-600"><?= htmlspecialchars((string)$r['user_type']) ?></td>
+            <td class="px-4 py-3 text-slate-600"><?= htmlspecialchars((string)($r['student_load'] ?? $r['user_type'])) ?></td>
+            <td class="px-4 py-3 text-slate-600"><?php $yr = trim((string)($r['student_year'] ?? '')); echo $yr !== '' ? htmlspecialchars($yr) : '—'; ?></td>
             <td class="px-4 py-3 max-w-[26rem] truncate text-slate-700">
-              <?php $dl = trim((string)($r['dept_list'] ?? '')); ?>
+              <?php
+                $program = trim((string)($r['program_list'] ?? ''));
+                $dl = $program !== '' ? $program : trim((string)($r['dept_list'] ?? ''));
+              ?>
               <?= $dl !== '' ? htmlspecialchars($dl) : '—' ?>
             </td>
             <td class="px-4 py-3 max-w-[28rem] truncate text-slate-600">
@@ -519,11 +559,12 @@ $schedulePaginationPages = static function (int $current, int $last): array {
                 <span class="text-slate-400"><?= $fmtContact('') ?></span>
               <?php endif; ?>
             </td>
+            <td class="px-4 py-3 whitespace-nowrap text-slate-700"><?= htmlspecialchars((string)($r['enrollment_status'] ?? 'Not enrolled')) ?></td>
           </tr>
         <?php endforeach; ?>
-        <?php if (!$student_rows): ?>
+        <?php if (!$student_rows && $search_id_error === null): ?>
           <tr>
-            <td class="px-4 py-6 text-center text-slate-500" colspan="9">
+            <td class="px-4 py-6 text-center text-slate-500" colspan="12">
               <?= $search_q !== '' ? 'No students match this search.' : 'No student rows in the database yet.' ?>
             </td>
           </tr>
@@ -648,7 +689,7 @@ $schedulePaginationPages = static function (int $current, int $last): array {
             </td>
           </tr>
         <?php endforeach; ?>
-        <?php if (!$faculty_rows): ?>
+        <?php if (!$faculty_rows && $search_id_error === null): ?>
           <tr>
             <td class="px-4 py-6 text-center text-slate-500" colspan="12">
               <?= $search_q !== '' ? 'No faculty match this search.' : 'No faculty rows in the database yet.' ?>

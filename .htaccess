@@ -1,0 +1,9 @@
+# Used only when the site document root is the repo folder (common on Elastic Beanstalk).
+# When the document root is already public/, Apache never reads this file.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^(app|database|docs|scripts|storage|vendor|\.git)(/|$) - [F,L]
+  RewriteCond %{REQUEST_URI} !^/public/
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>

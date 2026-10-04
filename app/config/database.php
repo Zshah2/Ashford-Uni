@@ -2,9 +2,12 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../lib/env.php';
+
 /**
  * Database settings from environment (DB_* or MYSQL_* on cloud hosts).
  * For local dev, copy database.local.php.example → database.local.php (gitignored).
+ * Environment variables win over database.local.php so an AWS host ignores this Mac's password file.
  * No credentials are hardcoded in this file.
  */
 
@@ -21,11 +24,11 @@ $config = [
 $setFromEnv = [];
 
 $applyEnv = static function (string $envKey, string $configKey, bool $asInt = false) use (&$config, &$setFromEnv): void {
-    $raw = getenv($envKey);
-    if ($raw === false || $raw === '') {
+    $raw = app_env($envKey);
+    if ($raw === null) {
         return;
     }
-    $config[$configKey] = $asInt ? (int)$raw : (string)$raw;
+    $config[$configKey] = $asInt ? (int)$raw : $raw;
     $setFromEnv[$configKey] = true;
 };
 
@@ -34,8 +37,9 @@ $applyEnv('MYSQL_HOST', 'host');
 $applyEnv('MYSQL_PORT', 'port', true);
 $applyEnv('MYSQL_DATABASE', 'database');
 $applyEnv('MYSQL_USER', 'username');
-if (getenv('MYSQL_PASSWORD') !== false) {
-    $config['password'] = (string)getenv('MYSQL_PASSWORD');
+$mysqlPassword = app_env('MYSQL_PASSWORD');
+if ($mysqlPassword !== null) {
+    $config['password'] = $mysqlPassword;
     $setFromEnv['password'] = true;
 }
 
@@ -56,11 +60,9 @@ if (!isset($setFromEnv['username'])) {
     }
 }
 if (!isset($setFromEnv['password'])) {
-    if (getenv('DB_PASS') !== false) {
-        $config['password'] = (string)getenv('DB_PASS');
-        $setFromEnv['password'] = true;
-    } elseif (getenv('DB_PASSWORD') !== false) {
-        $config['password'] = (string)getenv('DB_PASSWORD');
+    $dbPassword = app_env('DB_PASSWORD') ?? app_env('DB_PASS');
+    if ($dbPassword !== null) {
+        $config['password'] = $dbPassword;
         $setFromEnv['password'] = true;
     }
 }

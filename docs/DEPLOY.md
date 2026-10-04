@@ -117,17 +117,37 @@ Root `public/`; pass PHP to FPM. Static files served directly.
 - Add managed MySQL or attach a DO database cluster; map credentials to `DB_*` env vars
 - Set SMTP env vars for 2FA
 
-### AWS Lightsail
+### AWS (EC2, Elastic Beanstalk, or Lightsail) + RDS
 
-- Lightsail PHP + MySQL blueprint, or LAMP instance
-- Set `DB_*` to Lightsail database connection details
-- `public/` as web root
+Do this once. The app does not read `database.local.php` when `DB_HOST` and `DB_NAME` are set, so this Mac’s MySQL password stays off the server.
 
-### AWS EC2 + RDS
+1. Create an RDS MySQL 8 database. Note the endpoint, port, name, user, and password.
+2. Security group: allow the web server to reach RDS on port 3306. Do not open 3306 to the whole internet.
+3. Import the shared database. This file already has the schema and the logins. Do **not** run `scripts/import_all.php` afterward. That script replaces `collegeweb` with the older CSV import.
 
-- EC2: Apache/nginx + PHP-FPM, `public/` as docroot
-- RDS: set `DB_HOST` to RDS endpoint, `DB_PORT` to `3306`
-- Security group: allow EC2 → RDS on 3306
+```bash
+mysql -h YOUR_RDS_ENDPOINT -P 3306 -u YOUR_DB_USER -p < database/collegeweb.sql
+```
+
+4. Point the site at RDS. Set these on the instance or in the Elastic Beanstalk environment:
+
+| Variable | Value |
+|----------|--------|
+| `DB_HOST` | RDS endpoint |
+| `DB_PORT` | `3306` |
+| `DB_NAME` | `collegeweb` |
+| `DB_USER` | RDS user |
+| `DB_PASSWORD` | RDS password |
+| `APP_DEBUG` | `0` |
+| `TRUST_PROXY` | `1` when HTTPS stops at a load balancer |
+
+`DB_PASS` is accepted as an alias of `DB_PASSWORD`. `MYSQL_HOST`, `MYSQL_DATABASE`, `MYSQL_USER`, and `MYSQL_PASSWORD` work too.
+
+5. Document root should be `public/`. If the host can only use the repo folder as the root, the root `.htaccess` forwards requests into `public/` and blocks `app/`, `database/`, and `scripts/`.
+6. Optional TLS to RDS: set `DB_SSL_CA` to the path of the Amazon RDS CA bundle on the server.
+7. Sign-in is email + `Main@1234` for the accounts already in the dump. Composer is only required if you later turn on email OTP.
+
+Smoke test: `/` loads, `/login.php` does not say “Cannot connect to MySQL”, and an admin email reaches the dashboard.
 
 ---
 

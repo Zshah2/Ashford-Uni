@@ -20,6 +20,62 @@ function people_name_is_valid(string $name, bool $allowEmpty = false): bool
     return (bool)preg_match("/^[\p{L}][\p{L}\s'\-]{0,49}$/u", $name);
 }
 
+/**
+ * ID lookup check used by every people search.
+ * $who is "either" (student or faculty), "student", or "faculty".
+ * When $idOnly is false, names, emails, and phone text are left alone.
+ * A digits-only value must be a real 7-digit ID of the requested kind.
+ */
+function people_id_lookup_error(PDO $pdo, string $raw, bool $idOnly = false, string $who = 'either'): ?string
+{
+    $raw = trim($raw);
+    if ($raw === '') {
+        return null;
+    }
+    $message = 'Enter a valid student or faculty ID.';
+    if (!ctype_digit($raw)) {
+        return $idOnly ? $message : null;
+    }
+    if (strlen($raw) !== 7) {
+        return $message;
+    }
+    $id = (int)$raw;
+    $isStudent = $id >= 1000000 && $id <= 1999999;
+    $isFaculty = $id >= 9000000 && $id <= 9999999;
+    if ($who === 'student') {
+        if (!$isStudent) {
+            return $message;
+        }
+        $st = $pdo->prepare('SELECT 1 FROM students WHERE student_id = ? LIMIT 1');
+        $st->execute([$id]);
+
+        return $st->fetchColumn() ? null : $message;
+    }
+    if ($who === 'faculty') {
+        if (!$isFaculty) {
+            return $message;
+        }
+        $st = $pdo->prepare('SELECT 1 FROM faculty WHERE faculty_id = ? LIMIT 1');
+        $st->execute([$id]);
+
+        return $st->fetchColumn() ? null : $message;
+    }
+    if ($isStudent) {
+        $st = $pdo->prepare('SELECT 1 FROM students WHERE student_id = ? LIMIT 1');
+        $st->execute([$id]);
+
+        return $st->fetchColumn() ? null : $message;
+    }
+    if ($isFaculty) {
+        $st = $pdo->prepare('SELECT 1 FROM faculty WHERE faculty_id = ? LIMIT 1');
+        $st->execute([$id]);
+
+        return $st->fetchColumn() ? null : $message;
+    }
+
+    return $message;
+}
+
 /** Student IDs: 1000000–1999999. Faculty IDs: 9000000–9999999. Always 7 digits. */
 function people_id_is_valid_for_type(int $userId, string $personType): bool
 {
@@ -84,7 +140,7 @@ function people_dob_is_valid(string $dobIn, ?string &$normalized = null): bool
     return true;
 }
 
-/** Campus office like AB-2024, Lib-1106, AB-0021. */
+/** Campus office like NAB102: building code plus three digits. */
 function people_office_is_valid(string $office, bool $allowEmpty = true): bool
 {
     $office = trim($office);
@@ -95,7 +151,7 @@ function people_office_is_valid(string $office, bool $allowEmpty = true): bool
         return false;
     }
 
-    return (bool)preg_match('/^[A-Za-z][A-Za-z0-9]{0,9}-[A-Za-z0-9]{1,10}$/', $office);
+    return (bool)preg_match('/^[A-Za-z]{2,4}[0-9]{3}$/', $office);
 }
 
 function people_us_zip_is_valid(string $zip, bool $allowEmpty = true): bool

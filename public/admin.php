@@ -25,9 +25,12 @@ $currentAuthId = (int)($_SESSION['auth']['id'] ?? 0);
 $isAdmin = auth_is_admin();
 $isLimited = auth_is_limited();
 $isViewer = auth_is_viewer();
-$roleLabel = $isViewer ? 'Viewer' : ($isLimited ? 'Limited Admin' : 'Admin');
+$isStat = auth_is_stat();
+$roleLabel = $isStat ? 'Stat-Dept-Member' : ($isViewer ? 'Viewer' : ($isLimited ? 'Limited Admin' : 'Admin'));
 $roleNote = 'Admin: full access, including grades.';
-if ($isViewer) {
+if ($isStat) {
+    $roleNote = 'Stat-Dept-Member: your own record, plus anonymous course and department statistics. Student names and IDs stay hidden.';
+} elseif ($isViewer) {
     $roleNote = 'Viewer: browse only. No add/drop or hold changes.';
 } elseif ($isLimited) {
     $roleNote = 'Limited: holds and registration add/drop. No grade entry.';
@@ -48,9 +51,12 @@ if ($defaultMaxCredits < 1) {
 }
 
 $view = (string)($_GET['view'] ?? 'dashboard');
-$validViews = ['dashboard', 'people', 'schedule', 'courses', 'course', 'enrollment', 'departments', 'department', 'registration', 'reports', 'messages', 'settings', 'catalog', 'terms', 'holds', 'accounts', 'team'];
+$validViews = ['dashboard', 'people', 'schedule', 'courses', 'course', 'enrollment', 'departments', 'department', 'registration', 'reports', 'messages', 'settings', 'catalog', 'terms', 'campus', 'holds', 'accounts', 'team', 'stats'];
 if (!in_array($view, $validViews, true)) {
     $view = 'dashboard';
+}
+if ($isStat) {
+    $view = 'stats';
 }
 
 $peopleIdRaw = trim((string)($_GET['id'] ?? ''));
@@ -59,11 +65,81 @@ $peopleId = ctype_digit($peopleIdRaw) ? (int)$peopleIdRaw : null;
 $currentTerm = null;
 $currentTermCode = null;
 $currentTermId = null;
+$nextTermCode = null;
+$nextTermId = null;
+$nextTermName = null;
+$winterTermCode = null;
+$winterTermId = null;
+$winterTermName = null;
+$winterTermStart = null;
+$winterTermEnd = null;
 try {
-    $currentTerm = $pdo->query('SELECT term_id, code, name FROM terms ORDER BY start_date DESC LIMIT 1')->fetch(PDO::FETCH_ASSOC);
+    $currentTerm = $pdo->query('
+      SELECT term_id, code, name, start_date, end_date
+      FROM terms
+      WHERE start_date IS NOT NULL
+        AND end_date IS NOT NULL
+        AND CURDATE() BETWEEN start_date AND end_date
+      ORDER BY start_date DESC
+      LIMIT 1
+    ')->fetch(PDO::FETCH_ASSOC) ?: null;
+    if (!$currentTerm) {
+        $currentTerm = $pdo->query('
+          SELECT term_id, code, name, start_date, end_date
+          FROM terms
+          WHERE start_date IS NOT NULL AND start_date <= CURDATE()
+          ORDER BY start_date DESC
+          LIMIT 1
+        ')->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+    if (!$currentTerm) {
+        $currentTerm = $pdo->query('
+          SELECT term_id, code, name, start_date, end_date
+          FROM terms
+          ORDER BY start_date DESC
+          LIMIT 1
+        ')->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
     if ($currentTerm) {
         $currentTermCode = (string)$currentTerm['code'];
         $currentTermId = (int)$currentTerm['term_id'];
+        $currentStart = (string)($currentTerm['start_date'] ?? '');
+        if ($currentStart !== '') {
+            $springStmt = $pdo->prepare('
+              SELECT term_id, code, name, start_date
+              FROM terms
+              WHERE start_date > ?
+                AND (name LIKE "Spring%" OR code LIKE "SP%")
+              ORDER BY start_date ASC
+              LIMIT 1
+            ');
+            $springStmt->execute([$currentStart]);
+            $nextTerm = $springStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+            if ($nextTerm) {
+                $nextTermCode = (string)$nextTerm['code'];
+                $nextTermId = (int)$nextTerm['term_id'];
+                $nextTermName = (string)$nextTerm['name'];
+            }
+            $springStart = $nextTerm ? (string)($nextTerm['start_date'] ?? '9999-12-31') : '9999-12-31';
+            $winterStmt = $pdo->prepare('
+              SELECT term_id, code, name, start_date, end_date
+              FROM terms
+              WHERE start_date > ?
+                AND start_date < ?
+                AND (name LIKE "Winter%" OR code LIKE "WI%")
+              ORDER BY start_date ASC
+              LIMIT 1
+            ');
+            $winterStmt->execute([$currentStart, $springStart]);
+            $winterTerm = $winterStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+            if ($winterTerm) {
+                $winterTermCode = (string)$winterTerm['code'];
+                $winterTermId = (int)$winterTerm['term_id'];
+                $winterTermName = (string)$winterTerm['name'];
+                $winterTermStart = (string)($winterTerm['start_date'] ?? '');
+                $winterTermEnd = (string)($winterTerm['end_date'] ?? '');
+            }
+        }
     }
 } catch (Throwable) {
 }
@@ -185,8 +261,8 @@ function admin_find_section_schedule_conflict(
 
 // POST actions
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
-    if ($isViewer) {
-        header('Location: ' . url('/admin.php?view=' . rawurlencode($view) . '&msg=readonly'));
+    if ($isViewer || $isStat) {
+        header('Location: ' . url('/admin.php?view=' . rawurlencode($isStat ? 'stats' : $view) . '&msg=readonly'));
         exit;
     }
     if (!$canPostGrades && in_array((string)($_POST['action'] ?? ''), ['grade_upsert', 'people_scr_upsert'], true)) {
@@ -1520,13 +1596,21 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
     if ($action === 'reg_add' && $canRegister) {
         $studentId = isset($_POST['student_id']) && ctype_digit((string)$_POST['student_id']) ? (int)$_POST['student_id'] : null;
-        $sectionId = isset($_POST['section_id']) && ctype_digit((string)$_POST['section_id']) ? (int)$_POST['section_id'] : null;
+        $sectionRaw = trim((string)($_POST['section_id'] ?? ''));
+        $sectionId = ctype_digit($sectionRaw) ? (int)$sectionRaw : null;
         $termCode = trim((string)($_POST['term'] ?? ''));
         $overrideRegClosed = $isAdmin && !empty($_POST['override_reg_closed']);
         $overridePrereq = $isAdmin && !empty($_POST['override_prereq']);
         $overrideCredit = $isAdmin && !empty($_POST['override_credit']);
-        if ($studentId === null || $sectionId === null || $termCode === '') {
+        $regBack = '/admin.php?view=registration'
+            . ($studentId !== null ? '&student_id=' . $studentId : '')
+            . ($termCode !== '' ? '&term=' . rawurlencode($termCode) : '');
+        if ($studentId === null || $termCode === '') {
             header('Location: ' . url('/admin.php?view=registration&msg=invalid'));
+            exit;
+        }
+        if ($sectionRaw === '' || $sectionId === null) {
+            header('Location: ' . url($regBack . '&msg=bad_section'));
             exit;
         }
         $hc = $pdo->prepare('SELECT 1 FROM student_holds WHERE student_id = ? AND is_active = 1 LIMIT 1');
@@ -1544,8 +1628,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         ');
         $sec->execute([$sectionId]);
         $section = $sec->fetch(PDO::FETCH_ASSOC);
-        if (!$section || (string)$section['term_code'] !== $termCode) {
-            header('Location: ' . url('/admin.php?view=registration&student_id=' . $studentId . '&term=' . rawurlencode($termCode) . '&msg=wrongterm'));
+        if (!$section) {
+            header('Location: ' . url($regBack . '&msg=no_section'));
+            exit;
+        }
+        if ((string)$section['term_code'] !== $termCode) {
+            header('Location: ' . url($regBack . '&msg=wrongterm'));
             exit;
         }
         $termId = (int)$section['term_id'];
@@ -1728,7 +1816,17 @@ $dash = [
     'term_sections' => 0,
     'term_enrolled' => 0,
     'term_waitlisted' => 0,
+    'term_dropped' => 0,
     'term_open_seats' => 0,
+    'next_enrolled' => 0,
+    'next_waitlisted' => 0,
+    'next_dropped' => 0,
+    'next_sections' => 0,
+    'winter_enrolled' => 0,
+    'winter_waitlisted' => 0,
+    'winter_sections' => 0,
+    'semester_labels' => [],
+    'undeclared_students' => [],
     'top_enrolled' => [],
     'top_waitlisted' => [],
     'recent_enrollments' => [],
@@ -1795,7 +1893,15 @@ try {
     $counts['undergrad'] = (int)$pdo->query('SELECT COUNT(*) FROM undergrad_students')->fetchColumn();
     $counts['undergrad_ft'] = (int)$pdo->query('SELECT COUNT(*) FROM undergrad_students WHERE student_type LIKE "%Full%"')->fetchColumn();
     $counts['undergrad_pt'] = (int)$pdo->query('SELECT COUNT(*) FROM undergrad_students WHERE student_type LIKE "%Part%"')->fetchColumn();
+    foreach ($pdo->query('SELECT academic_year_level, COUNT(*) AS c FROM undergrad_students GROUP BY academic_year_level') as $yearRow) {
+        $yearKey = strtolower(trim((string)($yearRow['academic_year_level'] ?? '')));
+        if ($yearKey !== '') {
+            $counts['ug_' . $yearKey] = (int)$yearRow['c'];
+        }
+    }
     $counts['grad'] = (int)$pdo->query('SELECT COUNT(DISTINCT student_id) FROM grad_student_programs')->fetchColumn();
+    $counts['grad_masters'] = (int)$pdo->query('SELECT COUNT(DISTINCT g.student_id) FROM grad_student_programs g INNER JOIN programs p ON p.program_id = g.program_id WHERE p.level = "GRAD" AND p.name LIKE "Master%"')->fetchColumn();
+    $counts['grad_phd'] = (int)$pdo->query('SELECT COUNT(DISTINCT g.student_id) FROM grad_student_programs g INNER JOIN programs p ON p.program_id = g.program_id WHERE p.level = "GRAD" AND p.name = "PhD"')->fetchColumn();
     $counts['faculty_ft'] = (int)$pdo->query('SELECT COUNT(*) FROM faculty WHERE faculty_type LIKE "%Full%"')->fetchColumn();
     $counts['faculty_pt'] = (int)$pdo->query('SELECT COUNT(*) FROM faculty WHERE faculty_type LIKE "%Part%"')->fetchColumn();
     foreach (['buildings' => 'buildings', 'rooms' => 'rooms', 'offices' => 'office_rooms', 'semesters' => 'semesters'] as $countKey => $tableName) {
@@ -1903,7 +2009,8 @@ try {
         $st = $pdo->prepare('
           SELECT
             SUM(e.status = "enrolled") AS enrolled_cnt,
-            SUM(e.status = "waitlisted") AS waitlisted_cnt
+            SUM(e.status = "waitlisted") AS waitlisted_cnt,
+            SUM(e.status = "dropped") AS dropped_cnt
           FROM enrollments e
           INNER JOIN sections s ON s.section_id = e.section_id
           WHERE s.term_id = ?
@@ -1912,6 +2019,7 @@ try {
         $row = $st->fetch(PDO::FETCH_ASSOC) ?: [];
         $dash['term_enrolled'] = (int)($row['enrolled_cnt'] ?? 0);
         $dash['term_waitlisted'] = (int)($row['waitlisted_cnt'] ?? 0);
+        $dash['term_dropped'] = (int)($row['dropped_cnt'] ?? 0);
 
         $open = $pdo->prepare('
           SELECT
@@ -1993,6 +2101,65 @@ try {
         ');
         $topWl->execute([$currentTermId]);
         $dash['top_waitlisted'] = $topWl->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    if ($nextTermId !== null) {
+        $nextSec = $pdo->prepare('SELECT COUNT(*) FROM sections WHERE term_id = ?');
+        $nextSec->execute([$nextTermId]);
+        $dash['next_sections'] = (int)$nextSec->fetchColumn();
+        $nextSt = $pdo->prepare('
+          SELECT
+            SUM(e.status = "enrolled") AS enrolled_cnt,
+            SUM(e.status = "waitlisted") AS waitlisted_cnt,
+            SUM(e.status = "dropped") AS dropped_cnt
+          FROM enrollments e
+          INNER JOIN sections s ON s.section_id = e.section_id
+          WHERE s.term_id = ?
+        ');
+        $nextSt->execute([$nextTermId]);
+        $nextRow = $nextSt->fetch(PDO::FETCH_ASSOC) ?: [];
+        $dash['next_enrolled'] = (int)($nextRow['enrolled_cnt'] ?? 0);
+        $dash['next_waitlisted'] = (int)($nextRow['waitlisted_cnt'] ?? 0);
+        $dash['next_dropped'] = (int)($nextRow['dropped_cnt'] ?? 0);
+    }
+
+    if ($winterTermId !== null) {
+        $winterSec = $pdo->prepare('SELECT COUNT(*) FROM sections WHERE term_id = ?');
+        $winterSec->execute([$winterTermId]);
+        $dash['winter_sections'] = (int)$winterSec->fetchColumn();
+        $winterSt = $pdo->prepare('
+          SELECT
+            SUM(e.status = "enrolled") AS enrolled_cnt,
+            SUM(e.status = "waitlisted") AS waitlisted_cnt
+          FROM enrollments e
+          INNER JOIN sections s ON s.section_id = e.section_id
+          WHERE s.term_id = ?
+        ');
+        $winterSt->execute([$winterTermId]);
+        $winterRow = $winterSt->fetch(PDO::FETCH_ASSOC) ?: [];
+        $dash['winter_enrolled'] = (int)($winterRow['enrolled_cnt'] ?? 0);
+        $dash['winter_waitlisted'] = (int)($winterRow['waitlisted_cnt'] ?? 0);
+    }
+
+    try {
+        $semRows = $pdo->query('SELECT semester_name, semester_year FROM semesters ORDER BY start_date, semester_year')->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        foreach ($semRows as $semRow) {
+            $dash['semester_labels'][] = trim((string)$semRow['semester_name'] . ' ' . (string)$semRow['semester_year']);
+        }
+    } catch (Throwable) {
+    }
+
+    try {
+        $dash['undeclared_students'] = $pdo->query('
+          SELECT u.user_id, u.first_name, u.last_name
+          FROM students s
+          INNER JOIN users u ON u.user_id = s.student_id
+          LEFT JOIN student_departments d ON d.student_id = s.student_id
+          WHERE d.student_id IS NULL
+          ORDER BY u.user_id
+          LIMIT 8
+        ')->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (Throwable) {
     }
 
     $counts['courses_catalog'] = (int)$pdo->query('SELECT COUNT(*) FROM courses')->fetchColumn();
@@ -2274,19 +2441,15 @@ function nav_group_label(string $label): string
 </head>
 <body class="nb-staff min-h-full bg-slate-50 font-sans text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100">
   <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95">
-    <div class="mx-auto max-w-[min(100vw-2rem,110rem)] px-3 py-3 sm:px-5">
-      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
-        <div class="flex min-w-0 flex-1 items-center justify-between gap-3 lg:justify-start lg:gap-4">
-          <a href="<?= htmlspecialchars(url('/admin.php?view=dashboard')) ?>" class="flex min-w-0 items-center gap-3">
+    <div class="mx-auto max-w-[min(100vw-2rem,110rem)] px-3 py-2 sm:px-5">
+      <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-3">
+        <div class="flex min-w-0 items-center justify-between gap-3 lg:w-auto lg:shrink-0">
+          <a href="<?= htmlspecialchars(url('/admin.php?view=dashboard')) ?>" class="inline-flex shrink-0 items-center" aria-label="Ashford Admin dashboard">
             <?php
-            $logoClass = 'h-9 w-auto max-w-[10rem] shrink-0 object-contain sm:h-10 sm:max-w-[12rem]';
-            $logoAlt = 'Ashford Admin';
+            $logoClass = 'h-9 w-auto max-w-[10rem] object-contain sm:h-10 sm:max-w-[12rem]';
+            $logoAlt = 'Ashford College';
             require __DIR__ . '/../app/views/partials/brand_logo.php';
             ?>
-            <div class="min-w-0">
-              <div class="truncate text-sm font-semibold text-slate-900 dark:text-white">Ashford Admin</div>
-              <div class="text-[11px] text-slate-500 dark:text-slate-400">Admin dashboard</div>
-            </div>
           </a>
           <div class="flex items-center gap-2 lg:hidden">
             <button
@@ -2306,6 +2469,7 @@ function nav_group_label(string $label): string
           </div>
         </div>
 
+        <?php if (!$isStat): ?>
         <form method="get" action="<?= htmlspecialchars(url('/admin.php')) ?>" class="flex w-full flex-1 items-center gap-2 lg:max-w-xl">
           <input type="hidden" name="view" value="schedule" />
           <label class="sr-only" for="admin-global-search">Search schedule and directory</label>
@@ -2319,8 +2483,11 @@ function nav_group_label(string $label): string
           />
           <button type="submit" class="shrink-0 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">Search</button>
         </form>
+        <?php else: ?>
+        <div class="hidden flex-1 lg:block"></div>
+        <?php endif; ?>
 
-        <div class="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+        <div class="flex flex-wrap items-center justify-end gap-2 sm:gap-3 lg:ml-auto">
           <?php require __DIR__ . '/../app/views/partials/theme_toggle.php'; ?>
           <div class="group relative admin-notif-wrap" tabindex="0" data-notif-wrap>
             <a
@@ -2422,7 +2589,7 @@ function nav_group_label(string $label): string
     </div>
   </div>
 
-  <main id="adminMain" class="nb-admin-content relative w-full px-4 py-10 sm:px-6">
+  <main id="adminMain" class="nb-admin-content relative w-full px-4 py-6 sm:px-6">
     <?php
     $flashMsg = trim((string)($_GET['msg'] ?? ''));
     $flashMap = [
@@ -2493,11 +2660,41 @@ function nav_group_label(string $label): string
         </div>
       </aside>
       <div class="mx-auto w-full max-w-[min(100vw-2rem,110rem)] min-w-0">
-        <?php if ($view === 'dashboard'): ?>
-          <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <?php if ($view !== 'dashboard'): ?>
+          <div class="mb-4">
+            <a id="adminGoBack" class="<?= htmlspecialchars(ui_btn_secondary()) ?> inline-flex items-center gap-1.5" href="<?= htmlspecialchars(url('/admin.php?view=dashboard')) ?>">
+              <span aria-hidden="true">←</span> Back
+            </a>
+          </div>
+          <script>
+            (function () {
+              var link = document.getElementById('adminGoBack');
+              if (!link) return;
+              link.addEventListener('click', function (event) {
+                var ref = '';
+                try { ref = document.referrer || ''; } catch (e) { ref = ''; }
+                var sameSite = false;
+                if (ref) {
+                  try {
+                    var previous = new URL(ref);
+                    sameSite = previous.origin === window.location.origin && previous.pathname.indexOf('/login.php') === -1;
+                  } catch (e) { sameSite = false; }
+                }
+                if (sameSite && window.history.length > 1) {
+                  event.preventDefault();
+                  window.history.back();
+                }
+              });
+            })();
+          </script>
+        <?php endif; ?>
+        <?php if ($view === 'stats'): ?>
+          <?php require view_path('pages/admin/stats.php'); ?>
+        <?php elseif ($view === 'dashboard'): ?>
+          <div class="flex flex-col gap-3">
             <div>
               <h1 class="<?= htmlspecialchars(ui_h1()) ?>">Dashboard</h1>
-              <p class="mt-2 <?= htmlspecialchars(ui_muted()) ?>"><?= htmlspecialchars($roleNote) ?> Enrollment activity, data quality, and this term’s busiest sections are below.<?php if ($isAdmin): ?> <a class="<?= htmlspecialchars(ui_link()) ?>" href="<?= htmlspecialchars(url('/admin.php?view=team')) ?>">Team access</a><?php endif; ?></p>
+              <p class="mt-1 <?= htmlspecialchars(ui_muted()) ?>">Signed in as <?= htmlspecialchars($user) ?>. <?= $currentTerm ? htmlspecialchars((string)$currentTerm['name']) . ' is the current term.' : 'No term covers today’s date.' ?><?php if ($isAdmin): ?> <a class="<?= htmlspecialchars(ui_link()) ?>" href="<?= htmlspecialchars(url('/admin.php?view=team')) ?>">Team access</a><?php endif; ?></p>
             </div>
             <div class="flex flex-wrap gap-2">
               <a class="<?= htmlspecialchars(ui_btn_secondary()) ?>" href="<?= htmlspecialchars(url('/admin.php?view=registration')) ?>">Registration</a>
@@ -2505,57 +2702,52 @@ function nav_group_label(string $label): string
             </div>
           </div>
 
-          <div class="mt-6">
-            <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">People</div>
-            <div class="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <a class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-900" href="<?= htmlspecialchars(url('/admin.php?view=people')) ?>">
-                <div class="text-xs font-semibold uppercase text-slate-500">Undergraduates</div>
-                <div class="mt-2 text-3xl font-semibold tabular-nums"><?= (int)($counts['undergrad'] ?? 0) ?></div>
-                <div class="mt-2 text-xs text-slate-500"><?= (int)($counts['undergrad_ft'] ?? 0) ?> full-time · <?= (int)($counts['undergrad_pt'] ?? 0) ?> part-time</div>
-              </a>
-              <a class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-900" href="<?= htmlspecialchars(url('/admin.php?view=people')) ?>">
-                <div class="text-xs font-semibold uppercase text-slate-500">Graduates</div>
-                <div class="mt-2 text-3xl font-semibold tabular-nums"><?= (int)($counts['grad'] ?? 0) ?></div>
-                <div class="mt-2 text-xs text-slate-500">Masters and PhD</div>
-              </a>
-              <a class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-900" href="<?= htmlspecialchars(url('/admin.php?view=people')) ?>">
-                <div class="text-xs font-semibold uppercase text-slate-500">Faculty full-time</div>
-                <div class="mt-2 text-3xl font-semibold tabular-nums"><?= (int)($counts['faculty_ft'] ?? 0) ?></div>
-                <div class="mt-2 text-xs text-slate-500"><?= (int)$counts['faculty'] ?> faculty total</div>
-              </a>
-              <a class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-900" href="<?= htmlspecialchars(url('/admin.php?view=people')) ?>">
-                <div class="text-xs font-semibold uppercase text-slate-500">Faculty part-time</div>
-                <div class="mt-2 text-3xl font-semibold tabular-nums"><?= (int)($counts['faculty_pt'] ?? 0) ?></div>
-                <div class="mt-2 text-xs text-slate-500">Adjunct and part-time load</div>
-              </a>
-            </div>
+          <?php
+            $dashCard = 'flex h-full min-h-[7.5rem] flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900';
+            $dashCardLink = $dashCard . ' transition hover:border-indigo-300';
+            $dashCardLabel = 'text-[11px] font-semibold uppercase tracking-wide text-slate-500';
+            $dashCardValue = 'mt-1 text-3xl font-semibold leading-none tabular-nums text-slate-900 dark:text-white';
+            $dashCardNote = 'mt-auto pt-3 text-xs leading-5 text-slate-500';
+          ?>
+          <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <a class="<?= htmlspecialchars($dashCardLink) ?>" href="<?= htmlspecialchars(url('/admin.php?view=schedule&sched_filter=1&panels[students]=1&level=undergrad')) ?>">
+              <div class="<?= htmlspecialchars($dashCardLabel) ?>">Undergraduates</div>
+              <div class="<?= htmlspecialchars($dashCardValue) ?>"><?= number_format((int)($counts['undergrad'] ?? 0)) ?></div>
+              <div class="<?= htmlspecialchars($dashCardNote) ?>"><?= number_format((int)($counts['ug_freshman'] ?? 0)) ?> freshmen · <?= number_format((int)($counts['ug_sophomore'] ?? 0)) ?> sophomores · <?= number_format((int)($counts['ug_junior'] ?? 0)) ?> juniors · <?= number_format((int)($counts['ug_senior'] ?? 0)) ?> seniors<br><?= number_format((int)($counts['undergrad_ft'] ?? 0)) ?> full-time · <?= number_format((int)($counts['undergrad_pt'] ?? 0)) ?> part-time</div>
+            </a>
+            <a class="<?= htmlspecialchars($dashCardLink) ?>" href="<?= htmlspecialchars(url('/admin.php?view=schedule&sched_filter=1&panels[students]=1&level=grad')) ?>">
+              <div class="<?= htmlspecialchars($dashCardLabel) ?>">Graduates</div>
+              <div class="<?= htmlspecialchars($dashCardValue) ?>"><?= number_format((int)($counts['grad'] ?? 0)) ?></div>
+              <div class="<?= htmlspecialchars($dashCardNote) ?>"><?= number_format((int)($counts['grad_masters'] ?? 0)) ?> master’s · <?= number_format((int)($counts['grad_phd'] ?? 0)) ?> PhD</div>
+            </a>
+            <a class="<?= htmlspecialchars($dashCardLink) ?>" href="<?= htmlspecialchars(url('/admin.php?view=schedule&sched_filter=1&panels[faculty]=1')) ?>">
+              <div class="<?= htmlspecialchars($dashCardLabel) ?>">Faculty</div>
+              <div class="<?= htmlspecialchars($dashCardValue) ?>"><?= number_format((int)($counts['faculty'] ?? 0)) ?></div>
+              <div class="<?= htmlspecialchars($dashCardNote) ?>"><?= number_format((int)($counts['faculty_ft'] ?? 0)) ?> full-time · <?= number_format((int)($counts['faculty_pt'] ?? 0)) ?> part-time</div>
+            </a>
+            <a class="<?= htmlspecialchars($dashCardLink) ?>" href="<?= htmlspecialchars(url('/admin.php?view=departments')) ?>">
+              <div class="<?= htmlspecialchars($dashCardLabel) ?>">Departments</div>
+              <div class="<?= htmlspecialchars($dashCardValue) ?>"><?= number_format((int)($counts['departments'] ?? 0)) ?></div>
+              <div class="<?= htmlspecialchars($dashCardNote) ?>">Target 12</div>
+            </a>
+            <a class="<?= htmlspecialchars($dashCardLink) ?>" href="<?= htmlspecialchars(url('/admin.php?view=catalog')) ?>">
+              <div class="<?= htmlspecialchars($dashCardLabel) ?>">Catalog courses</div>
+              <div class="<?= htmlspecialchars($dashCardValue) ?>"><?= number_format((int)($counts['courses_catalog'] ?? 0)) ?></div>
+              <div class="<?= htmlspecialchars($dashCardNote) ?>">Course catalog</div>
+            </a>
+            <a class="<?= htmlspecialchars($dashCardLink) ?>" href="<?= htmlspecialchars(url('/admin.php?view=campus')) ?>">
+              <div class="<?= htmlspecialchars($dashCardLabel) ?>">Buildings</div>
+              <div class="<?= htmlspecialchars($dashCardValue) ?>"><?= number_format((int)($counts['buildings'] ?? 0)) ?></div>
+              <div class="<?= htmlspecialchars($dashCardNote) ?>"><?= number_format((int)($counts['rooms'] ?? 0)) ?> rooms · <?= number_format((int)($counts['offices'] ?? 0)) ?> offices</div>
+            </a>
+            <a class="<?= htmlspecialchars($dashCardLink) ?> sm:col-span-2" href="<?= htmlspecialchars(url('/admin.php?view=terms')) ?>">
+              <div class="<?= htmlspecialchars($dashCardLabel) ?>">Semesters</div>
+              <div class="<?= htmlspecialchars($dashCardValue) ?>"><?= number_format((int)($counts['semesters'] ?? 0)) ?></div>
+              <div class="<?= htmlspecialchars($dashCardNote) ?>"><?= htmlspecialchars(($dash['semester_labels'] ?? []) !== [] ? implode(' · ', $dash['semester_labels']) : 'Term dates') ?></div>
+            </a>
           </div>
 
-          <div class="mt-6">
-            <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Campus and catalog</div>
-            <div class="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <a class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-900" href="<?= htmlspecialchars(url('/admin.php?view=departments')) ?>">
-                <div class="text-xs font-semibold uppercase text-slate-500">Departments</div>
-                <div class="mt-2 text-3xl font-semibold tabular-nums"><?= (int)($counts['departments'] ?? 0) ?></div>
-              </a>
-              <a class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-900" href="<?= htmlspecialchars(url('/admin.php?view=catalog')) ?>">
-                <div class="text-xs font-semibold uppercase text-slate-500">Catalog courses</div>
-                <div class="mt-2 text-3xl font-semibold tabular-nums"><?= (int)($counts['courses_catalog'] ?? 0) ?></div>
-              </a>
-              <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                <div class="text-xs font-semibold uppercase text-slate-500">Buildings</div>
-                <div class="mt-2 text-3xl font-semibold tabular-nums"><?= (int)($counts['buildings'] ?? 0) ?></div>
-                <div class="mt-2 text-xs text-slate-500"><?= (int)($counts['rooms'] ?? 0) ?> rooms · <?= (int)($counts['offices'] ?? 0) ?> offices</div>
-              </div>
-              <a class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-900" href="<?= htmlspecialchars(url('/admin.php?view=terms')) ?>">
-                <div class="text-xs font-semibold uppercase text-slate-500">Semesters</div>
-                <div class="mt-2 text-3xl font-semibold tabular-nums"><?= (int)($counts['semesters'] ?? 0) ?></div>
-                <div class="mt-2 text-xs text-slate-500"><?= (int)$counts['holds_active'] ?> active holds</div>
-              </a>
-            </div>
-          </div>
-
-          <div id="admin-alerts" class="mt-6 scroll-mt-28 rounded-2xl border border-amber-200 bg-amber-50/90 p-4 shadow-sm dark:border-amber-800 dark:bg-amber-950/40">
+          <div id="admin-alerts" class="mt-4 scroll-mt-28 rounded-2xl border border-amber-200 bg-amber-50/90 p-4 shadow-sm dark:border-amber-800 dark:bg-amber-950/40">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div class="text-sm font-semibold text-amber-950 dark:text-amber-100">Alerts &amp; notices</div>
               <div class="flex flex-wrap gap-2 text-xs">
@@ -2594,18 +2786,53 @@ function nav_group_label(string $label): string
             <p class="mt-2 text-xs text-amber-900/90">Tip: use the header search to open <strong class="font-semibold">Master schedule</strong> with your query — fastest way to find people by ID, name, email, or phone.</p>
           </div>
 
-          <div class="mt-6 <?= htmlspecialchars(ui_card('p-5')) ?>">
+          <div class="mt-4 <?= htmlspecialchars(ui_card('p-4')) ?>">
             <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <div class="<?= htmlspecialchars(ui_label()) ?>">Current term spotlight</div>
                 <div class="mt-1 <?= htmlspecialchars(ui_muted()) ?>">
-                  <?= $currentTermCode ? ('Top sections — ' . htmlspecialchars($currentTermCode)) : 'No term configured yet.' ?>
+                  <?php if ($currentTerm): ?>
+                    <?= htmlspecialchars((string)$currentTerm['name']) ?>
+                    · <?= number_format((int)($dash['term_sections'] ?? 0)) ?> sections
+                    · <?= number_format((int)($dash['term_enrolled'] ?? 0)) ?> enrolled
+                    · <?= number_format((int)($dash['term_waitlisted'] ?? 0)) ?> waitlisted
+                    · <?= number_format((int)($dash['term_dropped'] ?? 0)) ?> dropped
+                  <?php else: ?>
+                    No term configured yet.
+                  <?php endif; ?>
                 </div>
               </div>
-              <a class="<?= htmlspecialchars(ui_link()) ?>" href="<?= htmlspecialchars(url('/admin.php?view=schedule')) ?>">Open master schedule →</a>
+              <a class="<?= htmlspecialchars(ui_link()) ?>" href="<?= htmlspecialchars(url('/admin.php?view=schedule' . ($currentTermId ? '&term_id=' . (int)$currentTermId : ''))) ?>">Open master schedule →</a>
+            </div>
+            <div class="mt-3 grid gap-3 lg:grid-cols-2">
+            <?php if ($winterTermId !== null): ?>
+              <div class="flex flex-col justify-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/60">
+                <div>
+                  <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Winter session</div>
+                  <div class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100"><?= htmlspecialchars($winterTermName !== '' ? $winterTermName : (string)$winterTermCode) ?></div>
+                  <div class="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                    <?php if ((int)($dash['winter_sections'] ?? 0) === 0): ?>
+                      <?= $winterTermStart !== '' && $winterTermEnd !== '' ? htmlspecialchars(date('M j, Y', strtotime($winterTermStart)) . ' – ' . date('M j, Y', strtotime($winterTermEnd))) . ' · ' : '' ?>no sections scheduled yet
+                    <?php else: ?>
+                      <?= number_format((int)$dash['winter_sections']) ?> sections · <?= number_format((int)($dash['winter_enrolled'] ?? 0)) ?> enrolled · <?= number_format((int)($dash['winter_waitlisted'] ?? 0)) ?> waitlisted
+                    <?php endif; ?>
+                  </div>
+                </div>
+              </div>
+            <?php endif; ?>
+            <?php if ($nextTermId !== null): ?>
+              <div class="flex flex-col justify-between gap-2 rounded-xl border border-indigo-200 bg-indigo-50/80 px-4 py-3 sm:flex-row sm:items-center dark:border-indigo-800 dark:bg-indigo-950/40">
+                <div>
+                  <div class="text-xs font-semibold uppercase tracking-wide text-indigo-800 dark:text-indigo-200">Next term</div>
+                  <div class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100"><?= htmlspecialchars($nextTermName !== '' ? $nextTermName : (string)$nextTermCode) ?></div>
+                  <div class="mt-1 text-xs text-slate-600 dark:text-slate-300"><?= number_format((int)($dash['next_sections'] ?? 0)) ?> sections · <?= number_format((int)($dash['next_enrolled'] ?? 0)) ?> enrolled · <?= number_format((int)($dash['next_waitlisted'] ?? 0)) ?> waitlisted<?php if ((int)($dash['next_dropped'] ?? 0) > 0): ?> · <?= number_format((int)$dash['next_dropped']) ?> dropped<?php endif; ?></div>
+                </div>
+                <a class="shrink-0 text-sm font-semibold text-indigo-700 hover:underline dark:text-indigo-300" href="<?= htmlspecialchars(url('/admin.php?view=schedule&term_id=' . (int)$nextTermId . '&sched_filter=1&panels[sections]=1')) ?>">Open <?= htmlspecialchars((string)$nextTermCode) ?> sections →</a>
+              </div>
+            <?php endif; ?>
             </div>
 
-            <div class="mt-5 grid gap-6 lg:grid-cols-2">
+            <div class="mt-3 grid gap-3 lg:grid-cols-2">
               <div class="min-w-0">
                 <div class="text-sm font-semibold text-slate-800">Top enrolled</div>
                 <div class="mt-3 max-h-[min(28rem,55vh)] overflow-auto rounded-xl border border-slate-200">
@@ -2668,35 +2895,7 @@ function nav_group_label(string $label): string
             </div>
           </div>
 
-          <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-              <div class="text-xs font-semibold uppercase text-slate-500">Total students</div>
-              <div class="mt-2 text-3xl font-semibold tabular-nums"><?= (int)$counts['students'] ?></div>
-              <div class="mt-2 text-xs text-slate-500"><?= (int)($dash['students_missing_email'] ?? 0) ?> missing email · <?= (int)($dash['students_missing_phone'] ?? 0) ?> missing phone</div>
-            </div>
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-              <div class="text-xs font-semibold uppercase text-slate-500">Total faculty</div>
-              <div class="mt-2 text-3xl font-semibold tabular-nums"><?= (int)$counts['faculty'] ?></div>
-              <div class="mt-2 text-xs text-slate-500"><?= (int)($dash['faculty_missing_email'] ?? 0) ?> missing email · <?= (int)($dash['faculty_missing_phone'] ?? 0) ?> missing phone</div>
-            </div>
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-              <div class="text-xs font-semibold uppercase text-slate-500">Active courses (this term)</div>
-              <div class="mt-2 text-3xl font-semibold tabular-nums"><?= (int)($counts['courses_active_term'] ?? 0) ?></div>
-              <div class="mt-2 text-xs text-slate-500"><?= (int)($dash['term_sections'] ?? 0) ?> sections · <?= (int)($counts['courses_catalog'] ?? 0) ?> courses in catalog</div>
-            </div>
-            <a class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-300 hover:shadow-md dark:border-slate-700 dark:bg-slate-900" href="<?= htmlspecialchars(url('/admin.php?view=departments')) ?>">
-              <div class="text-xs font-semibold uppercase text-slate-500">Departments</div>
-              <div class="mt-2 text-3xl font-semibold tabular-nums"><?= (int)($counts['departments'] ?? 0) ?></div>
-              <div class="mt-2 text-xs text-slate-500">
-                Term <?= $currentTermCode ? htmlspecialchars($currentTermCode) : '—' ?> ·
-                <?= (int)($dash['term_enrolled'] ?? 0) ?> enrolled ·
-                <?= (int)($dash['term_waitlisted'] ?? 0) ?> waitlisted ·
-                <?= (int)($dash['term_open_seats'] ?? 0) ?> open seats
-              </div>
-            </a>
-          </div>
-
-          <div class="mt-8 grid gap-6 lg:grid-cols-3">
+          <div class="mt-4 grid gap-3 lg:grid-cols-3">
             <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
               <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Enrollment trend</div>
               <p class="mt-1 text-xs text-slate-500">New enrollment rows recorded per month (last 12 months)</p>
@@ -2714,9 +2913,9 @@ function nav_group_label(string $label): string
             </div>
           </div>
 
-          <div class="mt-8 grid gap-6 lg:grid-cols-12">
+          <div class="mt-4 grid gap-3 lg:grid-cols-12">
             <div class="lg:col-span-8">
-              <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+              <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                 <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Recent enrollments</div>
@@ -2767,15 +2966,19 @@ function nav_group_label(string $label): string
               </div>
             </div>
             <div class="lg:col-span-4">
-              <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+              <div class="h-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                 <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Quick actions</div>
-                <ul class="mt-4 space-y-2 text-sm">
-                  <li><a class="inline-flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-semibold text-slate-900 hover:bg-slate-100" href="<?= htmlspecialchars(url('/admin.php?view=people')) ?>"><?= $isViewer ? 'Look up a student' : 'Students' ?> <span aria-hidden="true">→</span></a></li>
-                  <li><a class="inline-flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-semibold text-slate-900 hover:bg-slate-100" href="<?= htmlspecialchars(url('/admin.php?view=people')) ?>"><?= $isViewer ? 'Look up faculty' : 'Faculty' ?> <span aria-hidden="true">→</span></a></li>
-                  <li><a class="inline-flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-semibold text-slate-900 hover:bg-slate-100" href="<?= htmlspecialchars(url('/admin.php?view=schedule')) ?>"><?= $isViewer ? 'View the schedule' : 'Master schedule' ?> <span aria-hidden="true">→</span></a></li>
-                  <li><a class="inline-flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-semibold text-slate-900 hover:bg-slate-100" href="<?= htmlspecialchars(url('/admin.php?view=departments')) ?>">Departments <span aria-hidden="true">→</span></a></li>
+                <ul class="mt-3 space-y-1.5 text-sm">
+                  <li><a class="inline-flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-semibold text-slate-900 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" href="<?= htmlspecialchars(url('/admin.php?view=schedule&sched_filter=1&panels[students]=1')) ?>">Students <span aria-hidden="true">→</span></a></li>
+                  <li><a class="inline-flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-semibold text-slate-900 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" href="<?= htmlspecialchars(url('/admin.php?view=schedule&sched_filter=1&panels[faculty]=1')) ?>">Faculty <span aria-hidden="true">→</span></a></li>
+                  <li><a class="inline-flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-semibold text-slate-900 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" href="<?= htmlspecialchars(url('/admin.php?view=schedule' . ($currentTermId ? '&term_id=' . (int)$currentTermId : ''))) ?>">Master schedule <span aria-hidden="true">→</span></a></li>
+                  <li><a class="inline-flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-semibold text-slate-900 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" href="<?= htmlspecialchars(url('/admin.php?view=departments')) ?>">Departments <span aria-hidden="true">→</span></a></li>
+                  <?php if ($isAdmin): ?>
+                    <li><a class="inline-flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-semibold text-slate-900 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" href="<?= htmlspecialchars(url('/admin.php?view=catalog')) ?>">Catalog <span aria-hidden="true">→</span></a></li>
+                    <li><a class="inline-flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-semibold text-slate-900 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" href="<?= htmlspecialchars(url('/admin.php?view=accounts')) ?>">Accounts <span aria-hidden="true">→</span></a></li>
+                  <?php endif; ?>
                   <?php if ($canPostGrades): ?>
-                    <li><a class="inline-flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-semibold text-slate-900 hover:bg-slate-100" href="<?= htmlspecialchars(url('/admin.php?view=people')) ?>">Enter a grade <span aria-hidden="true">→</span></a></li>
+                    <li><a class="inline-flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-semibold text-slate-900 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" href="<?= htmlspecialchars(url('/admin.php?view=people')) ?>">Enter a grade <span aria-hidden="true">→</span></a></li>
                   <?php endif; ?>
                 </ul>
                 <p class="mt-4 text-xs leading-relaxed text-slate-500"><?= $isViewer ? 'This login can open records and cannot save changes.' : 'Signed in as ' . htmlspecialchars($user) . '. Use lookup when you already have an ID.' ?></p>
@@ -2783,8 +2986,8 @@ function nav_group_label(string $label): string
             </div>
           </div>
 
-          <div class="mt-8 grid gap-6 lg:grid-cols-2">
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <div class="mt-4 grid gap-3 lg:grid-cols-2">
+            <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
               <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Recent activity</div>
               <p class="mt-1 text-sm text-slate-600">Latest actions logged from this admin portal</p>
               <ul class="mt-4 max-h-80 space-y-3 overflow-y-auto text-sm">
@@ -2809,9 +3012,9 @@ function nav_group_label(string $label): string
                 <?php endif; ?>
               </ul>
             </div>
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-              <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Needs attention (detail)</div>
-              <ul class="mt-4 space-y-2 text-sm">
+            <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+              <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Needs attention</div>
+              <ul class="mt-3 space-y-1.5 text-sm">
                 <li class="flex items-center justify-between gap-3">
                   <a class="font-semibold text-indigo-700 hover:underline" href="<?= htmlspecialchars(url('/admin.php?view=schedule&q=%40ashford.edu')) ?>">Verify school emails</a>
                   <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700"><?= (int)($dash['students_missing_email'] ?? 0) + (int)($dash['faculty_missing_email'] ?? 0) ?></span>
@@ -2826,8 +3029,19 @@ function nav_group_label(string $label): string
                     <span class="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900"><?= (int)$counts['holds_active'] ?></span>
                   </a>
                 </li>
+                <?php foreach (($dash['undeclared_students'] ?? []) as $undeclared): ?>
+                  <?php
+                    $undeclaredName = trim((string)($undeclared['first_name'] ?? '') . ' ' . (string)($undeclared['last_name'] ?? ''));
+                    $undeclaredId = (int)($undeclared['user_id'] ?? 0);
+                  ?>
+                  <li>
+                    <a class="flex items-center justify-between gap-3 rounded-xl px-2 py-2 -mx-2 text-sm font-semibold text-indigo-700 hover:bg-slate-50 hover:underline" href="<?= htmlspecialchars(url('/admin.php?view=people&id=' . $undeclaredId)) ?>">
+                      <span><?= htmlspecialchars($undeclaredName !== '' ? $undeclaredName : 'Student') ?> has no department</span>
+                      <span class="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 font-mono text-xs font-semibold text-amber-900"><?= $undeclaredId ?></span>
+                    </a>
+                  </li>
+                <?php endforeach; ?>
               </ul>
-              <p class="mt-4 text-xs text-slate-500"><strong class="font-semibold text-slate-700">Exam season / approvals:</strong> wire calendar milestones here when you add workflow tables.</p>
             </div>
           </div>
 
@@ -3065,6 +3279,71 @@ function nav_group_label(string $label): string
             ?>
           <?php endif; ?>
 
+        <?php elseif ($view === 'campus'): ?>
+          <?php
+          $campusBuildings = [];
+          $campusRooms = [];
+          try {
+              $campusBuildings = $pdo->query('
+                SELECT
+                  b.building_id,
+                  b.building_name,
+                  b.building_use,
+                  COUNT(r.room_id) AS room_count,
+                  SUM(r.room_type = "office") AS office_count
+                FROM buildings b
+                LEFT JOIN rooms r ON r.building_id = b.building_id
+                GROUP BY b.building_id, b.building_name, b.building_use
+                ORDER BY b.building_name, b.building_id
+              ')->fetchAll(PDO::FETCH_ASSOC) ?: [];
+              $campusRooms = $pdo->query('
+                SELECT r.building_id, r.room_id, r.room_number, r.room_type, o.desk_count
+                FROM rooms r
+                LEFT JOIN office_rooms o ON o.room_id = r.room_id
+                ORDER BY r.building_id, r.room_number
+              ')->fetchAll(PDO::FETCH_ASSOC) ?: [];
+          } catch (Throwable) {
+              $campusBuildings = [];
+              $campusRooms = [];
+          }
+          ?>
+          <h1 class="<?= htmlspecialchars(ui_h1()) ?>">Buildings</h1>
+          <p class="mt-1 <?= htmlspecialchars(ui_muted()) ?>"><?= count($campusBuildings) ?> buildings · <?= count($campusRooms) ?> rooms</p>
+          <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <?php foreach ($campusBuildings as $bldg): ?>
+              <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500"><?= htmlspecialchars((string)$bldg['building_use']) ?></div>
+                <div class="mt-1 text-lg font-semibold text-slate-900 dark:text-white"><?= htmlspecialchars((string)$bldg['building_name']) ?></div>
+                <div class="mt-2 text-xs text-slate-500"><?= (int)$bldg['room_count'] ?> rooms · <?= (int)$bldg['office_count'] ?> offices</div>
+              </div>
+            <?php endforeach; ?>
+          </div>
+          <div class="mt-4 overflow-auto rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <table class="min-w-full text-left text-sm">
+              <thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+                <tr>
+                  <th class="px-4 py-2">Building</th>
+                  <th class="px-4 py-2">Room</th>
+                  <th class="px-4 py-2">Type</th>
+                  <th class="px-4 py-2">Desks</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-200">
+                <?php foreach ($campusRooms as $room): ?>
+                  <tr>
+                    <td class="px-4 py-2 font-semibold text-slate-900"><?= htmlspecialchars((string)$room['building_id']) ?></td>
+                    <td class="px-4 py-2 font-mono text-slate-700"><?= htmlspecialchars((string)$room['room_id']) ?></td>
+                    <td class="px-4 py-2 text-slate-600"><?= htmlspecialchars((string)$room['room_type']) ?></td>
+                    <td class="px-4 py-2 tabular-nums text-slate-600"><?= $room['desk_count'] === null ? '—' : (int)$room['desk_count'] ?></td>
+                  </tr>
+                <?php endforeach; ?>
+                <?php if ($campusRooms === []): ?>
+                  <tr><td class="px-4 py-6 text-center text-slate-500" colspan="4">No rooms yet.</td></tr>
+                <?php endif; ?>
+              </tbody>
+            </table>
+          </div>
+
         <?php elseif ($view === 'terms'): ?>
           <?php if (!$isAdmin): ?>
             <h1 class="<?= htmlspecialchars(ui_h1()) ?>">Terms</h1>
@@ -3261,6 +3540,17 @@ function nav_group_label(string $label): string
           if ($peoplePanel !== 'hold' && $peoplePanel !== 'info') {
               $peoplePanel = '';
           }
+          $peopleLookupError = null;
+          if ($peopleIdRaw !== '') {
+              try {
+                  $peopleLookupError = people_id_lookup_error($pdo, $peopleIdRaw);
+              } catch (Throwable) {
+                  $peopleLookupError = null;
+              }
+              if ($peopleLookupError !== null) {
+                  $peopleId = null;
+              }
+          }
           $isStu = false;
           $isFac = false;
           if ($peopleId !== null) {
@@ -3324,11 +3614,16 @@ function nav_group_label(string $label): string
                     pattern="\d+"
                     autocomplete="off"
                     placeholder="e.g. 12345"
-                    class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 font-mono text-sm text-slate-900 shadow-sm"
+                    class="mt-1 w-full rounded-xl border bg-white px-3 py-2.5 font-mono text-sm text-slate-900 shadow-sm <?= $peopleLookupError !== null ? 'border-rose-300' : 'border-slate-200' ?>"
+                    aria-invalid="<?= $peopleLookupError !== null ? 'true' : 'false' ?>"
+                    <?= $peopleLookupError !== null ? 'aria-describedby="people-id-error"' : '' ?>
                   />
                 </div>
                 <button class="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 sm:shrink-0" type="submit"><?= $idLookupHasSearch ? 'Search again' : 'Search' ?></button>
               </form>
+              <?php if ($peopleLookupError !== null): ?>
+                <div id="people-id-error" class="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-950" role="alert"><?= htmlspecialchars($peopleLookupError) ?></div>
+              <?php endif; ?>
               <div id="people-recent-searches" class="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5" aria-live="polite" hidden>
                 <div class="flex flex-wrap items-center gap-2">
                   <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Recent</span>
@@ -3434,8 +3729,8 @@ function nav_group_label(string $label): string
                     </div>
                     <div data-ap-faculty class="hidden">
                       <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500" for="ap-office">Office</label>
-                      <input id="ap-office" name="office_number" placeholder="AB-2024" pattern="[A-Za-z][A-Za-z0-9]{0,9}-[A-Za-z0-9]{1,10}" title="Format like AB-2024 or Lib-1106" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm dark:border-slate-600 dark:bg-slate-950" />
-                      <p class="mt-1 text-xs text-slate-500">Optional · e.g. <span class="font-mono">AB-2024</span></p>
+                      <input id="ap-office" name="office_number" placeholder="NAB102" pattern="[A-Za-z]{2,4}[0-9]{3}" title="Building code plus three digits, like NAB102" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm dark:border-slate-600 dark:bg-slate-950" />
+                      <p class="mt-1 text-xs text-slate-500">Optional · e.g. <span class="font-mono">NAB102</span></p>
                     </div>
                     <div data-ap-faculty class="hidden">
                       <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500" for="ap-rank">Rank</label>
@@ -4895,6 +5190,14 @@ function nav_group_label(string $label): string
               $status = '';
           }
           $q = trim((string)($_GET['q'] ?? ''));
+          $enrollIdError = null;
+          if ($q !== '' && ctype_digit($q) && strlen($q) === 7) {
+              try {
+                  $enrollIdError = people_id_lookup_error($pdo, $q, false, 'student');
+              } catch (Throwable) {
+                  $enrollIdError = 'Enter a valid student or faculty ID.';
+              }
+          }
 
           $terms = [];
           try {
@@ -4903,6 +5206,7 @@ function nav_group_label(string $label): string
           }
 
           $rows = [];
+          if ($enrollIdError === null) {
           try {
               $sql = '
                 SELECT
@@ -4969,6 +5273,7 @@ function nav_group_label(string $label): string
           } catch (Throwable) {
               $rows = [];
           }
+          }
           ?>
           <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Enrollment</h1>
           <p class="mt-2 text-sm text-slate-600">Who is enrolled in what (with student + section + course attributes). Use filters to narrow down results.</p>
@@ -4996,7 +5301,10 @@ function nav_group_label(string $label): string
               </div>
               <div class="min-w-0 flex-1">
                 <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500" for="en-q">Search</label>
-                <input id="en-q" name="q" value="<?= htmlspecialchars($q) ?>" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Student ID, name, email, course, section…" />
+                <input id="en-q" name="q" value="<?= htmlspecialchars($q) ?>" class="mt-1 w-full rounded-xl border px-3 py-2 text-sm <?= $enrollIdError !== null ? 'border-rose-300' : 'border-slate-200' ?>" placeholder="Student ID, name, email, course, section…" aria-invalid="<?= $enrollIdError !== null ? 'true' : 'false' ?>" <?= $enrollIdError !== null ? 'aria-describedby="enroll-id-error"' : '' ?> />
+                <?php if ($enrollIdError !== null): ?>
+                  <div id="enroll-id-error" class="mt-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-950" role="alert"><?= htmlspecialchars($enrollIdError) ?></div>
+                <?php endif; ?>
               </div>
               <button class="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500" type="submit">Filter</button>
               <a class="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50" href="<?= htmlspecialchars(url('/admin.php?view=enrollment')) ?>">Reset</a>
@@ -5073,7 +5381,7 @@ function nav_group_label(string $label): string
                     <td class="px-4 py-3 text-xs text-slate-500 whitespace-nowrap"><?= htmlspecialchars($createdFmt) ?></td>
                   </tr>
                 <?php endforeach; ?>
-                <?php if (!$rows): ?>
+                <?php if (!$rows && $enrollIdError === null): ?>
                   <tr><td class="px-4 py-10 text-center text-slate-500" colspan="8">No enrollment rows match your filters.</td></tr>
                 <?php endif; ?>
               </tbody>
@@ -5111,8 +5419,10 @@ function nav_group_label(string $label): string
               'prereq' => ['error', 'Prerequisite not met.'],
               'duplicate' => ['error', 'Already in section.'],
               'dupecourse' => ['error', 'Already in course this term.'],
-              'wrongterm' => ['error', 'Wrong term.'],
+              'wrongterm' => ['error', 'That section is not offered in the selected term.'],
               'invalid' => ['error', 'Invalid request.'],
+              'bad_section' => ['error', 'Enter a numeric section ID.'],
+              'no_section' => ['error', 'No section matches that ID.'],
               'regclosed' => ['error', 'Registration window is closed for this term.'],
               'promote_ok' => ['success', 'Student promoted from waitlist to enrolled.'],
               'promote_full' => ['error', 'Section is full — cannot promote from waitlist.'],
@@ -5124,7 +5434,18 @@ function nav_group_label(string $label): string
               echo '<div class="mb-4 rounded-2xl border ' . $cls . ' px-4 py-3 text-sm font-medium">' . htmlspecialchars($text) . '</div>';
           }
           $regStudentRaw = trim((string)($_GET['student_id'] ?? ''));
-          $regStudentId = ctype_digit($regStudentRaw) ? (int)$regStudentRaw : null;
+          $regStudentId = null;
+          $regLookupError = null;
+          if ($regStudentRaw !== '') {
+              try {
+                  $regLookupError = people_id_lookup_error($pdo, $regStudentRaw, true, 'student');
+              } catch (Throwable) {
+                  $regLookupError = 'Enter a valid student or faculty ID.';
+              }
+              if ($regLookupError === null) {
+                  $regStudentId = (int)$regStudentRaw;
+              }
+          }
           $termCode = trim((string)($_GET['term'] ?? ''));
           if ($termCode === '' && $currentTermCode !== null) {
               $termCode = $currentTermCode;
@@ -5141,6 +5462,17 @@ function nav_group_label(string $label): string
           $termId = null;
           $browseQ = trim((string)($_GET['browse_q'] ?? ''));
           $browseRows = [];
+          $browseError = null;
+          if ($browseQ !== '' && ctype_digit($browseQ) && strlen($browseQ) === 7) {
+              try {
+                  $browseError = people_id_lookup_error($pdo, $browseQ);
+              } catch (Throwable) {
+                  $browseError = 'Enter a valid student or faculty ID.';
+              }
+          }
+          if ($browseError === null && $browseQ !== '' && (!preg_match('/^[\p{L}\p{N}\s.\'\-:\/#]+$/u', $browseQ) || strlen($browseQ) > 80)) {
+              $browseError = 'That search is not valid. Use a course, instructor name, room, days and time, or a section ID.';
+          }
 
           if ($regStudentId !== null && $termCode !== '') {
               try {
@@ -5200,7 +5532,7 @@ function nav_group_label(string $label): string
                   }
               }
 
-              if ($termId !== null) {
+              if ($termId !== null && $browseError === null) {
                   try {
                       $sql = '
                         SELECT
@@ -5255,6 +5587,11 @@ function nav_group_label(string $label): string
                       $bst = $pdo->prepare($sql);
                       $bst->execute($bind);
                       $browseRows = $bst->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                      if ($browseQ !== '' && $browseRows === []) {
+                          $browseError = ctype_digit($browseQ)
+                              ? 'No section matches that ID.'
+                              : 'No sections match that name or course.';
+                      }
                   } catch (Throwable) {
                       $browseRows = [];
                   }
@@ -5267,7 +5604,7 @@ function nav_group_label(string $label): string
               <input type="hidden" name="view" value="registration" />
               <div class="min-w-0 flex-1 sm:max-w-xs">
                 <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500" for="reg-student-id">Student ID</label>
-                <input id="reg-student-id" name="student_id" value="<?= htmlspecialchars($regStudentRaw) ?>" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-mono" placeholder="e.g. 900651" />
+                <input id="reg-student-id" name="student_id" value="<?= htmlspecialchars($regStudentRaw) ?>" inputmode="numeric" class="mt-1 w-full rounded-xl border px-3 py-2 text-sm font-mono <?= $regLookupError !== null ? 'border-rose-300' : 'border-slate-200' ?>" placeholder="e.g. 1000000" aria-invalid="<?= $regLookupError !== null ? 'true' : 'false' ?>" <?= $regLookupError !== null ? 'aria-describedby="reg-student-error"' : '' ?> />
               </div>
               <div class="sm:w-60">
                 <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500" for="reg-term">Term</label>
@@ -5282,6 +5619,9 @@ function nav_group_label(string $label): string
                 <input type="hidden" name="browse_q" value="<?= htmlspecialchars($browseQ, ENT_QUOTES, 'UTF-8') ?>" />
               <?php endif; ?>
             </form>
+            <?php if ($regLookupError !== null): ?>
+              <div id="reg-student-error" class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-950" role="alert"><?= htmlspecialchars($regLookupError) ?></div>
+            <?php endif; ?>
 
             <?php if (!empty($regWindowClosed) && $regStudentId !== null && $termCode !== ''): ?>
               <div class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
@@ -5445,7 +5785,9 @@ function nav_group_label(string $label): string
                     <button class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50" type="submit">Search</button>
                   </form>
 
-                  <?php if ($termId === null): ?>
+                  <?php if ($browseError !== null): ?>
+                    <div class="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-950" role="alert"><?= htmlspecialchars($browseError) ?></div>
+                  <?php elseif ($termId === null): ?>
                     <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">This term code wasn’t found in the database.</div>
                   <?php elseif (!$browseRows): ?>
                     <div class="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600">No sections found for this term.</div>

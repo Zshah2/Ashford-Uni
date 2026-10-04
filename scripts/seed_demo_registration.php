@@ -176,7 +176,7 @@ $pdo->beginTransaction();
 try {
     $pdo->prepare('
       INSERT INTO terms (code, name, start_date, end_date)
-      VALUES ("FA26", "Fall 2026", "2026-08-20", "2026-12-15")
+      VALUES ("fall2026", "Fall 2026", "2026-08-20", "2026-12-15")
       ON DUPLICATE KEY UPDATE
         name = VALUES(name),
         start_date = VALUES(start_date),
@@ -185,7 +185,7 @@ try {
 
     $pdo->prepare('
       INSERT INTO terms (code, name, start_date, end_date)
-      VALUES ("SP27", "Spring 2027", "2027-01-11", "2027-05-08")
+      VALUES ("spring2027", "Spring 2027", "2027-01-11", "2027-05-08")
       ON DUPLICATE KEY UPDATE
         name = VALUES(name),
         start_date = VALUES(start_date),
@@ -194,18 +194,18 @@ try {
 
     $pdo->prepare('
       INSERT INTO terms (code, name, start_date, end_date)
-      VALUES ("FA27", "Fall 2027", "2027-08-23", "2027-12-16")
+      VALUES ("fall2027", "Fall 2027", "2027-08-23", "2027-12-16")
       ON DUPLICATE KEY UPDATE
         name = VALUES(name),
         start_date = VALUES(start_date),
         end_date = VALUES(end_date)
     ')->execute();
 
-    $termFa = seed_demo_term_id($pdo, 'FA26');
-    $termSp = seed_demo_term_id($pdo, 'SP27');
-    $termFa27 = seed_demo_term_id($pdo, 'FA27');
+    $termFa = seed_demo_term_id($pdo, 'fall2026');
+    $termSp = seed_demo_term_id($pdo, 'spring2027');
+    $termFa27 = seed_demo_term_id($pdo, 'fall2027');
     if ($termFa < 1) {
-        throw new RuntimeException('Failed to resolve term FA26');
+        throw new RuntimeException('Failed to resolve term fall2026');
     }
 
     $catalog = [
@@ -389,7 +389,7 @@ try {
     }
 
     $pdo->commit();
-    fwrite(STDOUT, 'Demo registration seed OK (student ' . $studentId . ", terms FA26 + SP27 + FA27, catalog with BI0101 prereqs + enrollments).\n");
+    fwrite(STDOUT, 'Demo registration seed OK (student ' . $studentId . ", terms fall2026 + spring2027 + fall2027, catalog with BI0101 prereqs + enrollments).\n");
 } catch (Throwable $e) {
     $pdo->rollBack();
     fwrite(STDERR, 'Seed failed: ' . $e->getMessage() . "\n");
