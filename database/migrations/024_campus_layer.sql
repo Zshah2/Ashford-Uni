@@ -1,6 +1,6 @@
 -- Campus layer from existing room codes in storage/import.
 -- Faculty offices: faculty.csv. Department offices: department.csv.
--- Room ids keep the source form (AB-2024), which is building abbreviation + room number.
+-- First load used hyphen room ids such as AB-2024. scripts/apply_midterm_schema.php rewrites them to a building code plus three digits, such as NAB102.
 -- Lecture and lab subtype tables are ready; this data has offices only.
 -- Class.time_slot_id is reserved for Thursday's time_slot entity (no FK yet).
 

@@ -66,11 +66,11 @@ $fmtLocation = static function (array $d): string {
       </div>
       <div>
         <label class="<?= htmlspecialchars(ui_label()) ?>" for="dept-building-new">Building</label>
-        <input id="dept-building-new" name="building_number" class="<?= htmlspecialchars(ui_input()) ?>" placeholder="Lib" />
+        <input id="dept-building-new" name="building_number" class="<?= htmlspecialchars(ui_input()) ?>" placeholder="NAB" />
       </div>
       <div>
         <label class="<?= htmlspecialchars(ui_label()) ?>" for="dept-room-new">Room</label>
-        <input id="dept-room-new" name="room_number" class="<?= htmlspecialchars(ui_input()) ?>" placeholder="1106" />
+        <input id="dept-room-new" name="room_number" class="<?= htmlspecialchars(ui_input()) ?>" placeholder="NAB102" />
       </div>
       <div>
         <label class="<?= htmlspecialchars(ui_label()) ?>" for="dept-email-new">Email</label>

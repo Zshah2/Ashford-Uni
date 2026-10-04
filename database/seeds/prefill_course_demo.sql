@@ -12,9 +12,9 @@ SET NAMES utf8mb4;
 
 INSERT INTO terms (code, name, start_date, end_date)
 VALUES
-  ('FA26', 'Fall 2026', '2026-08-20', '2026-12-15'),
-  ('SP27', 'Spring 2027', '2027-01-11', '2027-05-08'),
-  ('FA27', 'Fall 2027', '2027-08-23', '2027-12-16')
+  ('fall2026', 'Fall 2026', '2026-08-20', '2026-12-15'),
+  ('spring2027', 'Spring 2027', '2027-01-11', '2027-05-08'),
+  ('fall2027', 'Fall 2027', '2027-08-23', '2027-12-16')
 ON DUPLICATE KEY UPDATE
   name = VALUES(name),
   start_date = VALUES(start_date),
@@ -73,7 +73,7 @@ INSERT INTO sections (course_id, term_id, faculty_id, meeting_days, meeting_time
 SELECT 'ENG101', t.term_id, f.faculty_id, 'MWF', '09:00-09:50', 'ENG-201', 32
 FROM terms t
 CROSS JOIN (SELECT faculty_id FROM faculty ORDER BY faculty_id LIMIT 1) f
-WHERE t.code = 'FA26'
+WHERE t.code = 'fall2026'
   AND NOT EXISTS (
     SELECT 1 FROM sections s WHERE s.course_id = 'ENG101' AND s.term_id = t.term_id
   );
@@ -82,7 +82,7 @@ INSERT INTO sections (course_id, term_id, faculty_id, meeting_days, meeting_time
 SELECT 'ENG102', t.term_id, f.faculty_id, 'TR', '09:30-10:45', 'ENG-204', 28
 FROM terms t
 CROSS JOIN (SELECT faculty_id FROM faculty ORDER BY faculty_id LIMIT 1) f
-WHERE t.code = 'FA26'
+WHERE t.code = 'fall2026'
   AND NOT EXISTS (
     SELECT 1 FROM sections s WHERE s.course_id = 'ENG102' AND s.term_id = t.term_id
   );
@@ -91,7 +91,7 @@ INSERT INTO sections (course_id, term_id, faculty_id, meeting_days, meeting_time
 SELECT 'HIS103', t.term_id, f.faculty_id, 'TR', '13:00-14:15', 'LIB-1107', 36
 FROM terms t
 CROSS JOIN (SELECT faculty_id FROM faculty ORDER BY faculty_id LIMIT 1) f
-WHERE t.code = 'FA26'
+WHERE t.code = 'fall2026'
   AND NOT EXISTS (
     SELECT 1 FROM sections s WHERE s.course_id = 'HIS103' AND s.term_id = t.term_id
   );
@@ -100,7 +100,7 @@ INSERT INTO sections (course_id, term_id, faculty_id, meeting_days, meeting_time
 SELECT 'CS101', t.term_id, f.faculty_id, 'MWF', '11:00-11:50', 'SCI-105', 40
 FROM terms t
 CROSS JOIN (SELECT faculty_id FROM faculty ORDER BY faculty_id LIMIT 1) f
-WHERE t.code = 'FA26'
+WHERE t.code = 'fall2026'
   AND NOT EXISTS (
     SELECT 1 FROM sections s WHERE s.course_id = 'CS101' AND s.term_id = t.term_id
   );
@@ -109,7 +109,7 @@ INSERT INTO sections (course_id, term_id, faculty_id, meeting_days, meeting_time
 SELECT 'CS201', t.term_id, f.faculty_id, 'MWF', '13:00-13:50', 'SCI-210', 30
 FROM terms t
 CROSS JOIN (SELECT faculty_id FROM faculty ORDER BY faculty_id LIMIT 1) f
-WHERE t.code = 'FA26'
+WHERE t.code = 'fall2026'
   AND NOT EXISTS (
     SELECT 1 FROM sections s WHERE s.course_id = 'CS201' AND s.term_id = t.term_id
   );
@@ -118,7 +118,7 @@ INSERT INTO sections (course_id, term_id, faculty_id, meeting_days, meeting_time
 SELECT 'MATH150', t.term_id, f.faculty_id, 'TR', '10:00-11:15', 'MATH-140', 45
 FROM terms t
 CROSS JOIN (SELECT faculty_id FROM faculty ORDER BY faculty_id LIMIT 1) f
-WHERE t.code = 'FA26'
+WHERE t.code = 'fall2026'
   AND NOT EXISTS (
     SELECT 1 FROM sections s WHERE s.course_id = 'MATH150' AND s.term_id = t.term_id
   );
@@ -127,7 +127,7 @@ INSERT INTO sections (course_id, term_id, faculty_id, meeting_days, meeting_time
 SELECT 'BIO101', t.term_id, f.faculty_id, 'MW', '14:00-15:40', 'LAB-3B', 24
 FROM terms t
 CROSS JOIN (SELECT faculty_id FROM faculty ORDER BY faculty_id LIMIT 1) f
-WHERE t.code = 'FA26'
+WHERE t.code = 'fall2026'
   AND NOT EXISTS (
     SELECT 1 FROM sections s WHERE s.course_id = 'BIO101' AND s.term_id = t.term_id
   );
@@ -137,7 +137,7 @@ INSERT INTO sections (course_id, term_id, faculty_id, meeting_days, meeting_time
 SELECT 'ENG101', t.term_id, f.faculty_id, 'MWF', '10:00-10:50', 'ENG-201', 32
 FROM terms t
 CROSS JOIN (SELECT faculty_id FROM faculty ORDER BY faculty_id LIMIT 1) f
-WHERE t.code = 'SP27'
+WHERE t.code = 'spring2027'
   AND NOT EXISTS (
     SELECT 1 FROM sections s WHERE s.course_id = 'ENG101' AND s.term_id = t.term_id
   );
@@ -146,7 +146,7 @@ INSERT INTO sections (course_id, term_id, faculty_id, meeting_days, meeting_time
 SELECT 'HIS103', t.term_id, f.faculty_id, 'TR', '11:00-12:15', 'LIB-1107', 36
 FROM terms t
 CROSS JOIN (SELECT faculty_id FROM faculty ORDER BY faculty_id LIMIT 1) f
-WHERE t.code = 'SP27'
+WHERE t.code = 'spring2027'
   AND NOT EXISTS (
     SELECT 1 FROM sections s WHERE s.course_id = 'HIS103' AND s.term_id = t.term_id
   );
@@ -156,7 +156,7 @@ INSERT INTO sections (course_id, term_id, faculty_id, meeting_days, meeting_time
 SELECT 'BI0101', t.term_id, f.faculty_id, 'T', '14:30-15:45', 'BIO-100', 25
 FROM terms t
 CROSS JOIN (SELECT faculty_id FROM faculty ORDER BY faculty_id LIMIT 1) f
-WHERE t.code = 'FA27'
+WHERE t.code = 'fall2027'
   AND NOT EXISTS (
     SELECT 1 FROM sections s WHERE s.term_id = t.term_id AND s.course_id = 'BI0101'
     AND s.meeting_days = 'T' AND s.meeting_time = '14:30-15:45' AND s.room = 'BIO-100'
@@ -166,7 +166,7 @@ INSERT INTO sections (course_id, term_id, faculty_id, meeting_days, meeting_time
 SELECT 'BI0101', t.term_id, f.faculty_id, 'MWF', '09:00-09:50', 'BIO-101', 25
 FROM terms t
 CROSS JOIN (SELECT faculty_id FROM faculty ORDER BY faculty_id LIMIT 1) f
-WHERE t.code = 'FA27'
+WHERE t.code = 'fall2027'
   AND NOT EXISTS (
     SELECT 1 FROM sections s WHERE s.term_id = t.term_id AND s.course_id = 'BI0101'
     AND s.meeting_days = 'MWF' AND s.meeting_time = '09:00-09:50' AND s.room = 'BIO-101'
@@ -176,7 +176,7 @@ INSERT INTO sections (course_id, term_id, faculty_id, meeting_days, meeting_time
 SELECT 'BI0101', t.term_id, f.faculty_id, 'TR', '10:00-10:50', 'BIO-102', 25
 FROM terms t
 CROSS JOIN (SELECT faculty_id FROM faculty ORDER BY faculty_id LIMIT 1) f
-WHERE t.code = 'FA27'
+WHERE t.code = 'fall2027'
   AND NOT EXISTS (
     SELECT 1 FROM sections s WHERE s.term_id = t.term_id AND s.course_id = 'BI0101'
     AND s.meeting_days = 'TR' AND s.meeting_time = '10:00-10:50' AND s.room = 'BIO-102'
@@ -186,7 +186,7 @@ INSERT INTO sections (course_id, term_id, faculty_id, meeting_days, meeting_time
 SELECT 'BIO0098', t.term_id, f.faculty_id, 'MW', '11:00-12:15', 'BIO-090', 28
 FROM terms t
 CROSS JOIN (SELECT faculty_id FROM faculty ORDER BY faculty_id LIMIT 1) f
-WHERE t.code = 'FA27'
+WHERE t.code = 'fall2027'
   AND NOT EXISTS (
     SELECT 1 FROM sections s WHERE s.course_id = 'BIO0098' AND s.term_id = t.term_id
   );
@@ -195,57 +195,57 @@ INSERT INTO sections (course_id, term_id, faculty_id, meeting_days, meeting_time
 SELECT 'CHE0105', t.term_id, f.faculty_id, 'MWF', '13:00-13:50', 'CHE-110', 40
 FROM terms t
 CROSS JOIN (SELECT faculty_id FROM faculty ORDER BY faculty_id LIMIT 1) f
-WHERE t.code = 'FA27'
+WHERE t.code = 'fall2027'
   AND NOT EXISTS (
     SELECT 1 FROM sections s WHERE s.course_id = 'CHE0105' AND s.term_id = t.term_id
   );
 
--- Light enrollments: first several students into FA26 ENG101 + HIS103 + CS101 sections.
+-- Light enrollments: first several students into fall2026 ENG101 + HIS103 + CS101 sections.
 INSERT IGNORE INTO enrollments (student_id, section_id, status)
 SELECT st.student_id, s.section_id, 'enrolled'
 FROM (SELECT student_id FROM students ORDER BY student_id LIMIT 6) st
 CROSS JOIN sections s
-JOIN terms t ON t.term_id = s.term_id AND t.code = 'FA26'
+JOIN terms t ON t.term_id = s.term_id AND t.code = 'fall2026'
 WHERE s.course_id = 'ENG101';
 
 INSERT IGNORE INTO enrollments (student_id, section_id, status)
 SELECT st.student_id, s.section_id, 'enrolled'
 FROM (SELECT student_id FROM students ORDER BY student_id LIMIT 4 OFFSET 2) st
 CROSS JOIN sections s
-JOIN terms t ON t.term_id = s.term_id AND t.code = 'FA26'
+JOIN terms t ON t.term_id = s.term_id AND t.code = 'fall2026'
 WHERE s.course_id = 'HIS103';
 
 INSERT IGNORE INTO enrollments (student_id, section_id, status)
 SELECT st.student_id, s.section_id, 'enrolled'
 FROM (SELECT student_id FROM students ORDER BY student_id LIMIT 5 OFFSET 1) st
 CROSS JOIN sections s
-JOIN terms t ON t.term_id = s.term_id AND t.code = 'FA26'
+JOIN terms t ON t.term_id = s.term_id AND t.code = 'fall2026'
 WHERE s.course_id = 'CS101';
 
 INSERT IGNORE INTO enrollments (student_id, section_id, status)
 SELECT st.student_id, s.section_id, 'waitlisted'
 FROM (SELECT student_id FROM students ORDER BY student_id LIMIT 2 OFFSET 8) st
 CROSS JOIN sections s
-JOIN terms t ON t.term_id = s.term_id AND t.code = 'FA26'
+JOIN terms t ON t.term_id = s.term_id AND t.code = 'fall2026'
 WHERE s.course_id = 'CS101';
 
 INSERT IGNORE INTO enrollments (student_id, section_id, status)
 SELECT st.student_id, s.section_id, 'enrolled'
 FROM (SELECT student_id FROM students ORDER BY student_id LIMIT 6) st
 CROSS JOIN sections s
-JOIN terms t ON t.term_id = s.term_id AND t.code = 'FA27'
+JOIN terms t ON t.term_id = s.term_id AND t.code = 'fall2027'
 WHERE s.course_id = 'BI0101' AND s.room = 'BIO-100';
 
 INSERT IGNORE INTO enrollments (student_id, section_id, status)
 SELECT st.student_id, s.section_id, 'enrolled'
 FROM (SELECT student_id FROM students ORDER BY student_id LIMIT 6 OFFSET 4) st
 CROSS JOIN sections s
-JOIN terms t ON t.term_id = s.term_id AND t.code = 'FA27'
+JOIN terms t ON t.term_id = s.term_id AND t.code = 'fall2027'
 WHERE s.course_id = 'BI0101' AND s.room = 'BIO-101';
 
 INSERT IGNORE INTO enrollments (student_id, section_id, status)
 SELECT st.student_id, s.section_id, 'waitlisted'
 FROM (SELECT student_id FROM students ORDER BY student_id LIMIT 2 OFFSET 14) st
 CROSS JOIN sections s
-JOIN terms t ON t.term_id = s.term_id AND t.code = 'FA27'
+JOIN terms t ON t.term_id = s.term_id AND t.code = 'fall2027'
 WHERE s.course_id = 'BI0101' AND s.room = 'BIO-100';

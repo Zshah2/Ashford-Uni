@@ -48,4 +48,4 @@ That script creates the time-slot and history tables, renames semester codes, an
 
 ## Hosting
 
-More than one person can sign in when the site is on a shared address, not only `127.0.0.1` on one Mac. Set the `DB_*` variables to the hosted MySQL database, import `database/collegeweb.sql`, then run `php scripts/apply_midterm_schema.php` if that dump is older than these tables. Point the web root at `public/`. The steps are in `docs/DEPLOY.md`.
+More than one person can sign in when the site is on a shared address, not only `127.0.0.1` on one Mac. Set the `DB_*` variables to the hosted MySQL database and import `database/collegeweb.sql`. That file already has the time-slot tables, the history tables, and the mnemonic semester and room ids. Point the web root at `public/`. The steps are in `docs/DEPLOY.md`.
