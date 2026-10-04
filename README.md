@@ -9,7 +9,7 @@ You need PHP 8 and MySQL 8. `git clone` downloads the files. MySQL loads the stu
 ```bash
 git clone https://github.com/Zshah2/Ashford-Uni.git
 cd Ashford-Uni
-git checkout update_changes_01
+git checkout main
 cp app/config/database.local.php.example app/config/database.local.php
 ```
 
@@ -35,7 +35,7 @@ Use the full email. The username alone is rejected.
 
 ```bash
 cd Ashford-Uni
-git checkout update_changes_01
+git checkout main
 git pull
 mysql -u root -p < database/collegeweb.sql
 php -S 127.0.0.1:8000 -t public public/router.php
@@ -74,7 +74,7 @@ php scripts/import_all.php
 # To skip that step: SKIP_CATALOG_ENRICH=1 php scripts/import_all.php
 
 php scripts/seed_demo_registration.php
-# Fills terms FA26/SP27/FA27, demo catalog rows (BI0101 chain), sections, and sample enrollments.
+# Fills terms fall2026/spring2027/fall2027, demo catalog rows (BI0101 chain), sections, and sample enrollments.
 # SQL-only equivalent (after import): mysql … < database/seeds/prefill_course_demo.sql
 
 php scripts/enrich_all_courses.php

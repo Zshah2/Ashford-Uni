@@ -70,7 +70,7 @@ JOIN courses c ON c.course_id = s.course_id
 JOIN terms t ON t.term_id = s.term_id
 LEFT JOIN faculty f ON f.faculty_id = s.faculty_id
 LEFT JOIN users u ON u.user_id = f.faculty_id
-WHERE t.code = 'FA26' AND c.course_id = 'BIO101'
+WHERE t.code = 'fall2026' AND c.course_id = 'BIO101'
 LIMIT 5;
 
 -- Foreign keys, so the relationships are visible in MySQL

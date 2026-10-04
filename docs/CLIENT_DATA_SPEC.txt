@@ -3,7 +3,7 @@ Ashford College — Client Data Specs
 For professor + team lookover. Edit these text files if something needs fixing.
 Do not import to MySQL until everyone is happy with the numbers/samples.
 
-Branch: update_changes_01
+Branch: main
 Sample data folder: storage/import/client_review/
 
 

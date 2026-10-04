@@ -166,13 +166,12 @@ terms
 Primary key: term_id
 Unique: code
 Columns: term_id, code, name, start_date, end_date, registration_open, registration_start, registration_end
-code is the short name, such as FA26, WI27, or SP27.
+code is the mnemonic name, such as fall2026, winter2027, or spring2027.
 
 semesters
 Primary key: semester_id
-Unique: (semester_name, semester_year)
 Columns: semester_id, semester_name, semester_year, start_date, end_date
-semester_name is Fall, Winter, or Spring.
+semester_id is the mnemonic name, such as fall2026. semester_name is the label, such as Fall 2026.
 
 sections
 Primary key: section_id
@@ -208,7 +207,28 @@ faculty_id → faculty(faculty_id)
 lecture_id → lecture_rooms(room_id)
 semester_id → semesters(semester_id)
 Columns: crn, course_id, section_number, faculty_id, time_slot_id, lecture_id, semester_id, available_seats
-crn is the course reference number. lecture_id must be a lecture room, not an office or a lab. time_slot_id is reserved for a meeting-time entity. The master schedule used for registration is sections.
+crn is the course reference number and matches sections.section_id. lecture_id must be a lecture room, not an office or a lab. time_slot_id points at time_slot. The master schedule used for registration is sections.
+
+time_slot
+Primary key: time_slot_id
+A time slot is not one day or one clock time by itself. day holds day_id and weekday. period holds period_id, start_time, and end_time. time_slot_day and time_slot_period are the junction tables. Each junction row stores the two foreign keys.
+
+student_history
+Primary key: (student_id, crn)
+student_id → students(student_id)
+crn → classes(crn)
+course_id → courses(course_id)
+semester_id → semesters(semester_id)
+grade → grade_letters(grade)
+One row per student per class. The grade is a letter already stored for that class.
+
+faculty_history
+Primary key: (faculty_id, crn)
+faculty_id → faculty(faculty_id)
+crn → classes(crn)
+course_id → courses(course_id)
+semester_id → semesters(semester_id)
+One row per faculty member per class. There is no grade.
 
 academic_calendar
 Primary key: calendar_id
@@ -234,7 +254,7 @@ CAMPUS
 buildings
 Primary key: building_id
 Columns: building_id, building_name, building_use
-building_id is a short code such as AB, Lib, Admin, Gym, or SSC.
+building_id is a short code. The campus uses NAB, LIB, and SSC.
 
 rooms
 Primary key: room_id
@@ -242,7 +262,7 @@ Unique: (building_id, room_number)
 building_id → buildings(building_id)
 Columns: room_id, building_id, room_number, room_type
 room_type is lecture, lab, or office.
-room_id keeps the source form, such as AB-2024.
+room_id is the building code plus three digits, such as NAB102.
 
 lecture_rooms
 Primary key: room_id

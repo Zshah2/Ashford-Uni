@@ -117,7 +117,7 @@ Still optional:
 ----------------------------------------------------------------------
 [ ] php scripts/migrate.php — current schema
 [ ] php scripts/import_all.php — registrar CSV data
-[ ] php scripts/seed_demo_registration.php — demo student 123123, FA26, sample hold
+[ ] php scripts/seed_demo_registration.php — demo catalog for fall2026, sample hold
 [ ] README mentions fix_duplicate_course_enrollments.php next to other scripts
 
 ----------------------------------------------------------------------

@@ -139,7 +139,7 @@ CREATE TABLE IF NOT EXISTS courses (
 
 CREATE TABLE IF NOT EXISTS terms (
   term_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  code VARCHAR(10) NOT NULL, -- e.g. FA26, SP27
+  code VARCHAR(10) NOT NULL, -- e.g. fall2026, spring2027
   name VARCHAR(100) NOT NULL,
   start_date DATE NULL,
   end_date DATE NULL,
