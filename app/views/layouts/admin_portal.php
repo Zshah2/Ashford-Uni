@@ -8,7 +8,7 @@
 /** @var string|null $admin_nav_active */
 $docTitle = isset($pageTitle) && is_string($pageTitle) && $pageTitle !== ''
     ? $pageTitle
-    : 'Administration — Northbridge College';
+    : 'Administration — Ashford College';
 ?>
 <!DOCTYPE html>
 <html lang="en" class="h-full">
@@ -35,7 +35,7 @@ $docTitle = isset($pageTitle) && is_string($pageTitle) && $pageTitle !== ''
           <a href="<?= htmlspecialchars(url('/admin')) ?>" class="flex min-w-0 items-center gap-3">
             <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-sky-400 to-indigo-500 text-sm font-bold text-white">NB</span>
             <div class="min-w-0">
-              <div class="truncate text-sm font-semibold text-slate-900 dark:text-white">Northbridge Admin</div>
+              <div class="truncate text-sm font-semibold text-slate-900 dark:text-white">Ashford Admin</div>
               <div class="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                 <span><?= htmlspecialchars($admin_username ?? '') ?></span>
                 <span class="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200"><?= htmlspecialchars($admin_role_label ?? '') ?></span>

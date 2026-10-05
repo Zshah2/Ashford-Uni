@@ -28,7 +28,7 @@ $canManageHolds = auth_can_manage_holds();
 $canPostGrades = $isAdmin;
 
 $csrf = csrf_token();
-$pageTitle = 'Administration — Northbridge College';
+$pageTitle = 'Administration — Ashford College';
 $pdo = db();
 $appCfg = (array)config('app');
 $defaultMaxCredits = (int)(($appCfg['registration']['default_max_credits'] ?? 18));
@@ -2057,7 +2057,7 @@ function nav_group_label(string $label): string
               class="h-10 w-10 shrink-0 rounded-xl ring-1 ring-slate-200 dark:ring-slate-700"
             />
             <div class="min-w-0">
-              <div class="truncate text-sm font-semibold text-slate-900 dark:text-white">Northbridge Admin</div>
+              <div class="truncate text-sm font-semibold text-slate-900 dark:text-white">Ashford Admin</div>
               <div class="text-[11px] text-slate-500 dark:text-slate-400">Admin dashboard</div>
             </div>
           </a>
