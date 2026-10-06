@@ -118,7 +118,7 @@ $alertWarnClass = 'mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-
 
   <header class="relative z-10 border-b border-slate-200 bg-white/80 backdrop-blur dark:border-white/10 dark:bg-slate-950/80">
     <div class="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-      <a href="<?= htmlspecialchars(url('/')) ?>" class="text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">← Site home</a>
+      <span class="text-sm font-semibold text-slate-900 dark:text-white">Ashford University</span>
       <?php require __DIR__ . '/../app/views/partials/theme_toggle.php'; ?>
     </div>
   </header>
@@ -131,7 +131,7 @@ $alertWarnClass = 'mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-
       </div>
     <?php endif; ?>
 
-    <div id="panelLogin" class="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/50 dark:border-white/10 dark:bg-slate-900/90 dark:shadow-black/30 <?= $initialRegister ? 'hidden' : '' ?>">
+    <div id="panelLogin" class="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/50 dark:border-white/10 dark:bg-slate-900/90 dark:shadow-black/30">
       <div class="text-center">
         <img
           src="<?= htmlspecialchars(url('/assets/img/ashford_university_icon.svg')) ?>"
@@ -166,70 +166,8 @@ $alertWarnClass = 'mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-
         </div>
         <button type="submit" class="w-full rounded-xl bg-sky-500 py-3 text-sm font-semibold text-slate-950 shadow-sm hover:bg-sky-400 disabled:opacity-50 dark:shadow-sky-900/20" <?= $dbOk ? '' : 'disabled' ?>>Sign in</button>
       </form>
-      <p class="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
-        No account? <button type="button" id="btnShowRegister" class="font-semibold text-sky-700 hover:text-sky-600 dark:text-sky-300 dark:hover:text-sky-200">Register</button>
-      </p>
     </div>
-
-    <div id="panelRegister" class="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/50 dark:border-white/10 dark:bg-slate-900/90 dark:shadow-black/30 <?= $initialRegister ? '' : 'hidden' ?>">
-      <div class="text-center">
-        <img
-          src="<?= htmlspecialchars(url('/assets/img/ashford_university_icon.svg')) ?>"
-          alt=""
-          width="48"
-          height="48"
-          class="mx-auto h-12 w-12 rounded-2xl object-cover ring-1 ring-slate-200 dark:ring-white/15"
-          aria-hidden="true"
-        />
-        <h2 class="mt-3 text-xl font-semibold text-slate-900 dark:text-white">Create admin account</h2>
-        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Full admin role (seed other roles via scripts).</p>
-      </div>
-      <?php if ($registerError): ?>
-        <div class="<?= htmlspecialchars($alertErrorClass) ?>"><?= htmlspecialchars($registerError) ?></div>
-      <?php endif; ?>
-      <form class="mt-6 space-y-4" method="post" action="<?= htmlspecialchars(url('/login.php?view=register')) ?>" autocomplete="on">
-        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>" />
-        <input type="hidden" name="intent" value="register" />
-        <div>
-          <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="reg_email">Email</label>
-          <input id="reg_email" name="email" type="email" autocomplete="email" required class="<?= htmlspecialchars($inputClass) ?>" placeholder="you@school.edu" <?= $dbOk ? '' : 'disabled' ?> />
-        </div>
-        <div>
-          <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="reg_password">Password</label>
-          <input id="reg_password" name="password" type="password" minlength="8" required class="<?= htmlspecialchars($inputClass) ?>" <?= $dbOk ? '' : 'disabled' ?> />
-        </div>
-        <div>
-          <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="reg_confirm">Confirm password</label>
-          <input id="reg_confirm" name="confirm_password" type="password" minlength="8" required class="<?= htmlspecialchars($inputClass) ?>" <?= $dbOk ? '' : 'disabled' ?> />
-        </div>
-        <button type="submit" class="w-full rounded-xl bg-sky-500 py-3 text-sm font-semibold text-slate-950 shadow-sm hover:bg-sky-400 disabled:opacity-50 dark:shadow-sky-900/20" <?= $dbOk ? '' : 'disabled' ?>>Create account</button>
-      </form>
-      <p class="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
-        Have an account? <button type="button" id="btnShowLogin" class="font-semibold text-sky-700 hover:text-sky-600 dark:text-sky-300 dark:hover:text-sky-200">Sign in</button>
-      </p>
-    </div>
-
-    <p class="relative z-10 mt-8 text-center text-xs text-slate-500 dark:text-slate-500">
-      Use credentials provided by your administrator.
-    </p>
   </main>
-  <script>
-    (function () {
-      var base = <?= json_encode(url('/login.php'), JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES) ?>;
-      var loginPanel = document.getElementById('panelLogin');
-      var regPanel = document.getElementById('panelRegister');
-      document.getElementById('btnShowRegister')?.addEventListener('click', function () {
-        loginPanel.classList.add('hidden');
-        regPanel.classList.remove('hidden');
-        history.replaceState(null, '', base + '?view=register');
-      });
-      document.getElementById('btnShowLogin')?.addEventListener('click', function () {
-        regPanel.classList.add('hidden');
-        loginPanel.classList.remove('hidden');
-        history.replaceState(null, '', base);
-      });
-    })();
-  </script>
   <?php require __DIR__ . '/../app/views/partials/theme_boot.php'; ?>
 </body>
 </html>
