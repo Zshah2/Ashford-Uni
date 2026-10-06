@@ -58,6 +58,12 @@ if (!in_array($view, $validViews, true)) {
 if ($isStat) {
     $view = 'stats';
 }
+// Midterm demo: sign-in opens the dashboard, and the other admin screens stay off this view.
+$demoDashboardOnly = !$isStat;
+if ($demoDashboardOnly && $view !== 'dashboard') {
+    header('Location: ' . url('/admin.php?view=dashboard'));
+    exit;
+}
 
 $peopleIdRaw = trim((string)($_GET['id'] ?? ''));
 $peopleId = ctype_digit($peopleIdRaw) ? (int)$peopleIdRaw : null;
@@ -261,6 +267,10 @@ function admin_find_section_schedule_conflict(
 
 // POST actions
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+    if (!empty($demoDashboardOnly)) {
+        header('Location: ' . url('/admin.php?view=dashboard'));
+        exit;
+    }
     if ($isViewer || $isStat) {
         header('Location: ' . url('/admin.php?view=' . rawurlencode($isStat ? 'stats' : $view) . '&msg=readonly'));
         exit;
@@ -2410,7 +2420,7 @@ function nav_group_label(string $label): string
 
 ?>
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en" class="h-full<?= !empty($demoDashboardOnly) ? ' demo-dashboard' : '' ?>">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -2436,6 +2446,13 @@ function nav_group_label(string $label): string
       html:not(.admin-nav-collapsed) #adminMain {
         padding-left: 19rem;
       }
+      html.demo-dashboard #adminMain {
+        padding-left: 1.5rem;
+      }
+    }
+    html.demo-dashboard #adminSidebar,
+    html.demo-dashboard #adminMenuButton {
+      display: none !important;
     }
   </style>
 </head>
@@ -2469,7 +2486,7 @@ function nav_group_label(string $label): string
           </div>
         </div>
 
-        <?php if (!$isStat): ?>
+        <?php if (!$isStat && empty($demoDashboardOnly)): ?>
         <form method="get" action="<?= htmlspecialchars(url('/admin.php')) ?>" class="flex w-full flex-1 items-center gap-2 lg:max-w-xl">
           <input type="hidden" name="view" value="schedule" />
           <label class="sr-only" for="admin-global-search">Search schedule and directory</label>
@@ -2489,6 +2506,7 @@ function nav_group_label(string $label): string
 
         <div class="flex flex-wrap items-center justify-end gap-2 sm:gap-3 lg:ml-auto">
           <?php require __DIR__ . '/../app/views/partials/theme_toggle.php'; ?>
+          <?php if (empty($demoDashboardOnly)): ?>
           <div class="group relative admin-notif-wrap" tabindex="0" data-notif-wrap>
             <a
               href="<?= htmlspecialchars(url('/admin.php?view=dashboard#admin-alerts')) ?>"
@@ -2530,6 +2548,7 @@ function nav_group_label(string $label): string
               </div>
             <?php endif; ?>
           </div>
+          <?php endif; ?>
 
           <div class="flex max-w-[14rem] items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-2 py-1.5 dark:border-slate-700 dark:bg-slate-900/80">
             <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-indigo-600 to-sky-600 text-xs font-bold text-white"><?= htmlspecialchars($adminUserInitials) ?></span>
@@ -2539,6 +2558,7 @@ function nav_group_label(string $label): string
             </div>
           </div>
 
+          <?php if (empty($demoDashboardOnly)): ?>
           <button
             type="button"
             id="adminSidebarToggle"
@@ -2551,6 +2571,7 @@ function nav_group_label(string $label): string
           </button>
 
           <a href="<?= htmlspecialchars(url('/')) ?>" class="hidden text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white sm:inline">Site home</a>
+          <?php endif; ?>
           <form method="post" action="<?= htmlspecialchars(url('/logout.php')) ?>" class="inline">
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>" />
             <button type="submit" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800">Log out</button>
@@ -2582,9 +2603,11 @@ function nav_group_label(string $label): string
           <button type="submit" class="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-rose-700 ring-1 ring-rose-200 hover:bg-rose-50 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-950/50">Log out</button>
         </form>
 
+        <?php if (empty($demoDashboardOnly)): ?>
         <p class="mt-4 text-xs leading-relaxed text-slate-500">
           <strong class="text-slate-600"><?= htmlspecialchars($roleLabel) ?>:</strong> <?= htmlspecialchars(preg_replace('/^[^:]+:\s*/', '', $roleNote)) ?>
         </p>
+        <?php endif; ?>
       </div>
     </div>
   </div>
@@ -2654,9 +2677,11 @@ function nav_group_label(string $label): string
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>" />
             <button type="submit" class="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-rose-700 ring-1 ring-rose-200 hover:bg-rose-50 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-950/50">Log out</button>
           </form>
+          <?php if (empty($demoDashboardOnly)): ?>
           <p class="mt-4 text-xs leading-relaxed text-slate-500">
             <strong class="text-slate-600"><?= htmlspecialchars($roleLabel) ?>:</strong> <?= htmlspecialchars(preg_replace('/^[^:]+:\s*/', '', $roleNote)) ?>
           </p>
+          <?php endif; ?>
         </div>
       </aside>
       <div class="mx-auto w-full max-w-[min(100vw-2rem,110rem)] min-w-0">
@@ -2694,14 +2719,17 @@ function nav_group_label(string $label): string
           <div class="flex flex-col gap-3">
             <div>
               <h1 class="<?= htmlspecialchars(ui_h1()) ?>">Dashboard</h1>
-              <p class="mt-1 <?= htmlspecialchars(ui_muted()) ?>">Signed in as <?= htmlspecialchars($user) ?>. <?= $currentTerm ? htmlspecialchars((string)$currentTerm['name']) . ' is the current term.' : 'No term covers today’s date.' ?><?php if ($isAdmin): ?> <a class="<?= htmlspecialchars(ui_link()) ?>" href="<?= htmlspecialchars(url('/admin.php?view=team')) ?>">Team access</a><?php endif; ?></p>
+              <p class="mt-1 <?= htmlspecialchars(ui_muted()) ?>">Signed in as <?= htmlspecialchars($user) ?>.<?php if (empty($demoDashboardOnly)): ?> <?= $currentTerm ? htmlspecialchars((string)$currentTerm['name']) . ' is the current term.' : 'No term covers today’s date.' ?><?php if ($isAdmin): ?> <a class="<?= htmlspecialchars(ui_link()) ?>" href="<?= htmlspecialchars(url('/admin.php?view=team')) ?>">Team access</a><?php endif; ?><?php endif; ?></p>
             </div>
+            <?php if (empty($demoDashboardOnly)): ?>
             <div class="flex flex-wrap gap-2">
               <a class="<?= htmlspecialchars(ui_btn_secondary()) ?>" href="<?= htmlspecialchars(url('/admin.php?view=registration')) ?>">Registration</a>
               <a class="<?= htmlspecialchars(ui_btn_secondary()) ?>" href="<?= htmlspecialchars(url('/admin.php?view=holds')) ?>" title="Look up holds for one student by ID">Student hold lookup</a>
             </div>
+            <?php endif; ?>
           </div>
 
+          <?php if (empty($demoDashboardOnly)): ?>
           <?php
             $dashCard = 'flex h-full min-h-[7.5rem] flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900';
             $dashCardLink = $dashCard . ' transition hover:border-indigo-300';
@@ -2710,43 +2738,44 @@ function nav_group_label(string $label): string
             $dashCardNote = 'mt-auto pt-3 text-xs leading-5 text-slate-500';
           ?>
           <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <a class="<?= htmlspecialchars($dashCardLink) ?>" href="<?= htmlspecialchars(url('/admin.php?view=schedule&sched_filter=1&panels[students]=1&level=undergrad')) ?>">
+            <div class="<?= htmlspecialchars($dashCard) ?>">
               <div class="<?= htmlspecialchars($dashCardLabel) ?>">Undergraduates</div>
               <div class="<?= htmlspecialchars($dashCardValue) ?>"><?= number_format((int)($counts['undergrad'] ?? 0)) ?></div>
               <div class="<?= htmlspecialchars($dashCardNote) ?>"><?= number_format((int)($counts['ug_freshman'] ?? 0)) ?> freshmen · <?= number_format((int)($counts['ug_sophomore'] ?? 0)) ?> sophomores · <?= number_format((int)($counts['ug_junior'] ?? 0)) ?> juniors · <?= number_format((int)($counts['ug_senior'] ?? 0)) ?> seniors<br><?= number_format((int)($counts['undergrad_ft'] ?? 0)) ?> full-time · <?= number_format((int)($counts['undergrad_pt'] ?? 0)) ?> part-time</div>
-            </a>
-            <a class="<?= htmlspecialchars($dashCardLink) ?>" href="<?= htmlspecialchars(url('/admin.php?view=schedule&sched_filter=1&panels[students]=1&level=grad')) ?>">
+            </div>
+            <div class="<?= htmlspecialchars($dashCard) ?>">
               <div class="<?= htmlspecialchars($dashCardLabel) ?>">Graduates</div>
               <div class="<?= htmlspecialchars($dashCardValue) ?>"><?= number_format((int)($counts['grad'] ?? 0)) ?></div>
               <div class="<?= htmlspecialchars($dashCardNote) ?>"><?= number_format((int)($counts['grad_masters'] ?? 0)) ?> master’s · <?= number_format((int)($counts['grad_phd'] ?? 0)) ?> PhD</div>
-            </a>
-            <a class="<?= htmlspecialchars($dashCardLink) ?>" href="<?= htmlspecialchars(url('/admin.php?view=schedule&sched_filter=1&panels[faculty]=1')) ?>">
+            </div>
+            <div class="<?= htmlspecialchars($dashCard) ?>">
               <div class="<?= htmlspecialchars($dashCardLabel) ?>">Faculty</div>
               <div class="<?= htmlspecialchars($dashCardValue) ?>"><?= number_format((int)($counts['faculty'] ?? 0)) ?></div>
               <div class="<?= htmlspecialchars($dashCardNote) ?>"><?= number_format((int)($counts['faculty_ft'] ?? 0)) ?> full-time · <?= number_format((int)($counts['faculty_pt'] ?? 0)) ?> part-time</div>
-            </a>
-            <a class="<?= htmlspecialchars($dashCardLink) ?>" href="<?= htmlspecialchars(url('/admin.php?view=departments')) ?>">
+            </div>
+            <div class="<?= htmlspecialchars($dashCard) ?>">
               <div class="<?= htmlspecialchars($dashCardLabel) ?>">Departments</div>
               <div class="<?= htmlspecialchars($dashCardValue) ?>"><?= number_format((int)($counts['departments'] ?? 0)) ?></div>
-              <div class="<?= htmlspecialchars($dashCardNote) ?>">Target 12</div>
-            </a>
-            <a class="<?= htmlspecialchars($dashCardLink) ?>" href="<?= htmlspecialchars(url('/admin.php?view=catalog')) ?>">
+              <div class="<?= htmlspecialchars($dashCardNote) ?>">Academic departments</div>
+            </div>
+            <div class="<?= htmlspecialchars($dashCard) ?>">
               <div class="<?= htmlspecialchars($dashCardLabel) ?>">Catalog courses</div>
               <div class="<?= htmlspecialchars($dashCardValue) ?>"><?= number_format((int)($counts['courses_catalog'] ?? 0)) ?></div>
               <div class="<?= htmlspecialchars($dashCardNote) ?>">Course catalog</div>
-            </a>
-            <a class="<?= htmlspecialchars($dashCardLink) ?>" href="<?= htmlspecialchars(url('/admin.php?view=campus')) ?>">
+            </div>
+            <div class="<?= htmlspecialchars($dashCard) ?>">
               <div class="<?= htmlspecialchars($dashCardLabel) ?>">Buildings</div>
               <div class="<?= htmlspecialchars($dashCardValue) ?>"><?= number_format((int)($counts['buildings'] ?? 0)) ?></div>
               <div class="<?= htmlspecialchars($dashCardNote) ?>"><?= number_format((int)($counts['rooms'] ?? 0)) ?> rooms · <?= number_format((int)($counts['offices'] ?? 0)) ?> offices</div>
-            </a>
-            <a class="<?= htmlspecialchars($dashCardLink) ?> sm:col-span-2" href="<?= htmlspecialchars(url('/admin.php?view=terms')) ?>">
+            </div>
+            <div class="<?= htmlspecialchars($dashCard) ?> sm:col-span-2">
               <div class="<?= htmlspecialchars($dashCardLabel) ?>">Semesters</div>
               <div class="<?= htmlspecialchars($dashCardValue) ?>"><?= number_format((int)($counts['semesters'] ?? 0)) ?></div>
               <div class="<?= htmlspecialchars($dashCardNote) ?>"><?= htmlspecialchars(($dash['semester_labels'] ?? []) !== [] ? implode(' · ', $dash['semester_labels']) : 'Term dates') ?></div>
-            </a>
+            </div>
           </div>
 
+          <?php if (empty($demoDashboardOnly)): ?>
           <div id="admin-alerts" class="mt-4 scroll-mt-28 rounded-2xl border border-amber-200 bg-amber-50/90 p-4 shadow-sm dark:border-amber-800 dark:bg-amber-950/40">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div class="text-sm font-semibold text-amber-950 dark:text-amber-100">Alerts &amp; notices</div>
@@ -2785,6 +2814,7 @@ function nav_group_label(string $label): string
             </div>
             <p class="mt-2 text-xs text-amber-900/90">Tip: use the header search to open <strong class="font-semibold">Master schedule</strong> with your query — fastest way to find people by ID, name, email, or phone.</p>
           </div>
+          <?php endif; ?>
 
           <div class="mt-4 <?= htmlspecialchars(ui_card('p-4')) ?>">
             <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -2802,7 +2832,7 @@ function nav_group_label(string $label): string
                   <?php endif; ?>
                 </div>
               </div>
-              <a class="<?= htmlspecialchars(ui_link()) ?>" href="<?= htmlspecialchars(url('/admin.php?view=schedule' . ($currentTermId ? '&term_id=' . (int)$currentTermId : ''))) ?>">Open master schedule →</a>
+              <?php if (empty($demoDashboardOnly)): ?><a class="<?= htmlspecialchars(ui_link()) ?>" href="<?= htmlspecialchars(url('/admin.php?view=schedule' . ($currentTermId ? '&term_id=' . (int)$currentTermId : ''))) ?>">Open master schedule →</a><?php endif; ?>
             </div>
             <div class="mt-3 grid gap-3 lg:grid-cols-2">
             <?php if ($winterTermId !== null): ?>
@@ -2827,7 +2857,7 @@ function nav_group_label(string $label): string
                   <div class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100"><?= htmlspecialchars($nextTermName !== '' ? $nextTermName : (string)$nextTermCode) ?></div>
                   <div class="mt-1 text-xs text-slate-600 dark:text-slate-300"><?= number_format((int)($dash['next_sections'] ?? 0)) ?> sections · <?= number_format((int)($dash['next_enrolled'] ?? 0)) ?> enrolled · <?= number_format((int)($dash['next_waitlisted'] ?? 0)) ?> waitlisted<?php if ((int)($dash['next_dropped'] ?? 0) > 0): ?> · <?= number_format((int)$dash['next_dropped']) ?> dropped<?php endif; ?></div>
                 </div>
-                <a class="shrink-0 text-sm font-semibold text-indigo-700 hover:underline dark:text-indigo-300" href="<?= htmlspecialchars(url('/admin.php?view=schedule&term_id=' . (int)$nextTermId . '&sched_filter=1&panels[sections]=1')) ?>">Open <?= htmlspecialchars((string)$nextTermCode) ?> sections →</a>
+                <?php if (empty($demoDashboardOnly)): ?><a class="shrink-0 text-sm font-semibold text-indigo-700 hover:underline dark:text-indigo-300" href="<?= htmlspecialchars(url('/admin.php?view=schedule&term_id=' . (int)$nextTermId . '&sched_filter=1&panels[sections]=1')) ?>">Open <?= htmlspecialchars((string)$nextTermCode) ?> sections →</a><?php endif; ?>
               </div>
             <?php endif; ?>
             </div>
@@ -2921,7 +2951,7 @@ function nav_group_label(string $label): string
                     <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Recent enrollments</div>
                     <div class="mt-1 text-sm text-slate-600">Latest registration activity across sections</div>
                   </div>
-                  <a class="text-sm font-semibold text-indigo-700 hover:underline" href="<?= htmlspecialchars(url('/admin.php?view=registration')) ?>">Open registration →</a>
+                  <?php if (empty($demoDashboardOnly)): ?><a class="text-sm font-semibold text-indigo-700 hover:underline" href="<?= htmlspecialchars(url('/admin.php?view=registration')) ?>">Open registration →</a><?php endif; ?>
                 </div>
                 <div class="mt-4 max-h-[min(24rem,50vh)] overflow-auto rounded-xl border border-slate-200">
                   <table class="min-w-full text-left text-sm">
@@ -2965,6 +2995,7 @@ function nav_group_label(string $label): string
                 </div>
               </div>
             </div>
+            <?php if (empty($demoDashboardOnly)): ?>
             <div class="lg:col-span-4">
               <div class="h-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                 <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Quick actions</div>
@@ -2984,8 +3015,10 @@ function nav_group_label(string $label): string
                 <p class="mt-4 text-xs leading-relaxed text-slate-500"><?= $isViewer ? 'This login can open records and cannot save changes.' : 'Signed in as ' . htmlspecialchars($user) . '. Use lookup when you already have an ID.' ?></p>
               </div>
             </div>
+            <?php endif; ?>
           </div>
 
+          <?php if (empty($demoDashboardOnly)): ?>
           <div class="mt-4 grid gap-3 lg:grid-cols-2">
             <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
               <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Recent activity</div>
@@ -3012,6 +3045,7 @@ function nav_group_label(string $label): string
                 <?php endif; ?>
               </ul>
             </div>
+            <?php if (empty($demoDashboardOnly)): ?>
             <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
               <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Needs attention</div>
               <ul class="mt-3 space-y-1.5 text-sm">
@@ -3043,7 +3077,9 @@ function nav_group_label(string $label): string
                 <?php endforeach; ?>
               </ul>
             </div>
+            <?php endif; ?>
           </div>
+          <?php endif; ?>
 
           <?php
             $chartMonthLabels = json_encode($dash['chart_month_labels'] ?? [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
@@ -3141,6 +3177,7 @@ function nav_group_label(string $label): string
             }
           })();
           </script>
+          <?php endif; ?>
 
         <?php elseif ($view === 'reports'): ?>
           <?php
@@ -4300,7 +4337,7 @@ function nav_group_label(string $label): string
                       <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                         <div class="border-b border-slate-100 px-4 py-3">
                           <h3 class="text-sm font-semibold text-slate-900">Course enrollments</h3>
-                          <p class="mt-0.5 text-xs text-slate-500">Pick a term tab (e.g. FA27), then review courses and status.</p>
+                          <p class="mt-0.5 text-xs text-slate-500">Pick a term tab (e.g. fall2026), then review courses and status.</p>
                         </div>
                         <?php if (!$enrollmentTermOrder): ?>
                           <div class="px-4 py-8 text-center text-sm text-slate-500">No enrollment rows.</div>
@@ -5011,7 +5048,7 @@ function nav_group_label(string $label): string
                       <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                         <div class="border-b border-slate-100 px-4 py-3">
                           <h3 class="text-sm font-semibold text-slate-900">Sections teaching</h3>
-                          <p class="mt-0.5 text-xs text-slate-500">Switch term tabs (e.g. FA27) to see each roster slice.</p>
+                          <p class="mt-0.5 text-xs text-slate-500">Switch term tabs (e.g. fall2026) to see each roster slice.</p>
                         </div>
                         <?php if (!$facSectionTermOrder): ?>
                           <div class="px-4 py-8 text-center text-sm text-slate-500">No sections assigned.</div>

@@ -17,7 +17,9 @@ $adminNavGroup = static function (string $label): string {
 };
 ?>
 <nav class="space-y-1 text-sm">
-  <?php if (!empty($isStat)): ?>
+  <?php if (!empty($demoDashboardOnly)): ?>
+    <?= $adminNavItem(url('/admin.php?view=dashboard'), 'Dashboard', true) ?>
+  <?php elseif (!empty($isStat)): ?>
     <?= $adminNavItem(url('/admin.php?view=stats'), 'Department statistics', $view === 'stats') ?>
   <?php else: ?>
   <?= $adminNavItem(url('/admin.php?view=dashboard'), 'Dashboard', $view === 'dashboard') ?>
